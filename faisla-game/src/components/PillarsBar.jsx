@@ -1,37 +1,41 @@
 import React from 'react'
-import { motion } from 'framer-motion'
 
 const items = [
-  { key: 'family',     label: 'Family',     barClass: 'bar-family',     icon: '👨‍👩‍👧' },
-  { key: 'crops',      label: 'Crops',      barClass: 'bar-crops',      icon: '🌾' },
-  { key: 'finance',    label: 'Finance',    barClass: 'bar-finance',    icon: '💰' },
-  { key: 'resilience', label: 'Resilience', barClass: 'bar-resilience', icon: '🛡️' },
+  { key: 'family',     label: 'Family',     barClass: 'bar-family',     icon: '👨‍👩‍👧', dangerIcon: '😰' },
+  { key: 'crops',      label: 'Crops',      barClass: 'bar-crops',      icon: '🌾',     dangerIcon: '🥀' },
+  { key: 'finance',    label: 'Finance',    barClass: 'bar-finance',    icon: '💰',     dangerIcon: '💸' },
+  { key: 'resilience', label: 'Resilience', barClass: 'bar-resilience', icon: '🛡️',    dangerIcon: '⚠️' },
 ]
 
 export function PillarsBar({ metrics }) {
   return (
-    <div className="w-full space-y-2.5">
-      {items.map((item, i) => {
-        const value = metrics?.[item.key] ?? 0
+    <div className="nm-raised rounded-2xl px-4 py-4 flex flex-col gap-3"
+      style={{ border: '1px solid var(--border-wheat)' }}>
+      {items.map((item) => {
+        const value  = metrics?.[item.key] ?? 0
         const danger = value <= 20
+        const warn   = value <= 40 && value > 20
         return (
-          <div key={item.key} className="flex items-center gap-2.5">
-            <span className="text-base w-6 text-center">{item.icon}</span>
-            <span className="w-20 text-[10px] uppercase tracking-widest font-semibold text-slate-400">
+          <div key={item.key} className="flex items-center gap-3">
+            <span className="text-lg w-6 text-center shrink-0 leading-none">
+              {danger ? item.dangerIcon : item.icon}
+            </span>
+            <span className="w-20 text-xs font-bold uppercase tracking-wider shrink-0"
+              style={{ color: 'var(--text-muted)' }}>
               {item.label}
             </span>
-            <div className="flex-1 h-2.5 rounded-full bg-white/5 overflow-hidden relative">
-              <motion.div
+            <div className="flex-1 h-3 rounded-full bar-track overflow-hidden">
+              <div
                 className={`${item.barClass} h-full rounded-full`}
-                initial={{ width: 0 }}
-                animate={{ width: `${value}%` }}
-                transition={{ duration: 0.6, delay: i * 0.05, ease: 'easeOut' }}
+                style={{
+                  width: `${value}%`,
+                  transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)',
+                  animation: danger ? 'dangerPulse 1.4s ease-in-out infinite' : 'none',
+                }}
               />
-              {danger && (
-                <div className="absolute inset-0 rounded-full animate-pulse bg-red-500/20" />
-              )}
             </div>
-            <span className={`w-8 text-[11px] text-right font-bold tabular-nums ${danger ? 'text-red-400' : 'text-slate-300'}`}>
+            <span className="w-8 text-sm text-right font-black tabular-nums shrink-0"
+              style={{ color: danger ? '#ef4444' : warn ? '#f59e0b' : 'var(--text-secondary)' }}>
               {value}
             </span>
           </div>

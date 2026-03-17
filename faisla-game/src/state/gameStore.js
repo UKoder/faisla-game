@@ -28,7 +28,21 @@ export const useGameStore = create((set, get) => ({
   inDebtTrap: false,
   gameOver: false,
   gameOverReason: null,
-   bestDaysSurvived: 0,
+  bestDaysSurvived: 0,
+  ttsEnabled: true,
+  lightMode: false,
+
+  toggleTts() {
+    set((s) => ({ ttsEnabled: !s.ttsEnabled }))
+  },
+
+  toggleLightMode() {
+    set((s) => {
+      const next = !s.lightMode
+      try { localStorage.setItem('faisla_lightMode', String(next)) } catch {}
+      return { lightMode: next }
+    })
+  },
 
   startNewRun() {
     set({
@@ -58,10 +72,13 @@ export const useGameStore = create((set, get) => ({
       })
     }
     if (best?.bestDaysSurvived !== undefined) {
-      set({
-        bestDaysSurvived: best.bestDaysSurvived,
-      })
+      set({ bestDaysSurvived: best.bestDaysSurvived })
     }
+    // Restore light mode preference
+    try {
+      const lm = localStorage.getItem('faisla_lightMode')
+      if (lm !== null) set({ lightMode: lm === 'true' })
+    } catch {}
   },
 
   /**
