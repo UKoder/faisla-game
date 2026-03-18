@@ -1,5 +1,7 @@
-import React from 'react'
-
+/**
+ * PillarsBar — renders the four farm pillars.
+ * Both portrait and landscape now share the same warm neumorphic theme.
+ */
 const items = [
   { key: 'family',     label: 'Family',     barClass: 'bar-family',     icon: '👨‍👩‍👧', dangerIcon: '😰' },
   { key: 'crops',      label: 'Crops',      barClass: 'bar-crops',      icon: '🌾',     dangerIcon: '🥀' },
@@ -9,22 +11,23 @@ const items = [
 
 export function PillarsBar({ metrics }) {
   return (
-    <div className="nm-raised rounded-2xl px-4 py-4 flex flex-col gap-3"
-      style={{ border: '1px solid var(--border-wheat)' }}>
+    <div className="p-nm-raised rounded-2xl px-4 py-4 flex flex-col gap-3"
+      style={{ border: '1px solid var(--p-border-wheat)' }}>
       {items.map((item) => {
         const value  = metrics?.[item.key] ?? 0
         const danger = value <= 20
         const warn   = value <= 40 && value > 20
+
         return (
           <div key={item.key} className="flex items-center gap-3">
             <span className="text-lg w-6 text-center shrink-0 leading-none">
               {danger ? item.dangerIcon : item.icon}
             </span>
             <span className="w-20 text-xs font-bold uppercase tracking-wider shrink-0"
-              style={{ color: 'var(--text-muted)' }}>
+              style={{ color: 'var(--p-text-muted)' }}>
               {item.label}
             </span>
-            <div className="flex-1 h-3 rounded-full bar-track overflow-hidden">
+            <div className="flex-1 h-3 rounded-full bar-track-p overflow-hidden">
               <div
                 className={`${item.barClass} h-full rounded-full`}
                 style={{
@@ -35,7 +38,7 @@ export function PillarsBar({ metrics }) {
               />
             </div>
             <span className="w-8 text-sm text-right font-black tabular-nums shrink-0"
-              style={{ color: danger ? '#ef4444' : warn ? '#f59e0b' : 'var(--text-secondary)' }}>
+              style={{ color: danger ? '#ef4444' : warn ? '#f59e0b' : 'var(--p-text-secondary)' }}>
               {value}
             </span>
           </div>

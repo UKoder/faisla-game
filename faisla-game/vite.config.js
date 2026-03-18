@@ -2,23 +2,50 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'icons/*.png'],
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,webp}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2}'],
+        // Cache all navigation requests for offline SPA routing
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/api/],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\./,
+            handler: 'CacheFirst',
+            options: { cacheName: 'fonts', expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 } },
+          },
+        ],
       },
       manifest: {
-        name: 'Faisla - Farmer Decision Game',
+        name: 'Faisla — Farmer Decision Game',
         short_name: 'Faisla',
+        description: 'A financial literacy game for Indian farmers. Play offline, learn real-world money skills.',
         start_url: '/',
         display: 'standalone',
-        background_color: '#020617',
-        theme_color: '#16a34a',
-        icons: [],
+        orientation: 'any',
+        background_color: '#0d0a04',
+        theme_color: '#d4a843',
+        categories: ['games', 'education'],
+        icons: [
+          {
+            src: '/icons/icon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any',
+          },
+          {
+            src: '/icons/icon-192.svg',
+            sizes: '192x192',
+            type: 'image/svg+xml',
+            purpose: 'maskable',
+          },
+        ],
+        screenshots: [],
       },
     }),
   ],

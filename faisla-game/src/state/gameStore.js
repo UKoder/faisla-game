@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { getShuffledDeck } from '../scenarios/faislaDeck'
 import { applyPillarEffects, evaluateGameState } from '../engine/consequences'
 import { saveLastRun, loadLastRun, saveBestRun, loadBestRun } from '../services/storage'
+import { isBadChoice, vibrateError, vibrateSuccess } from '../services/haptics'
 
 const initialMetrics = {
   family: 60,
@@ -30,12 +31,43 @@ export const useGameStore = create((set, get) => ({
   gameOverReason: null,
   bestDaysSurvived: 0,
   ttsEnabled: true,
-  ttsLang: 'en-IN',   // 'en-IN' | 'hi-IN' | 'ta-IN'
-  uiLang: 'en-IN',    // UI display language
+  ttsLang: 'en-IN',
+  uiLang: 'en-IN',
   lightMode: false,
+  passAndPlay: false,
+  pendingChoice: null,
+  choiceRejected: false,   // true briefly after P2 rejects — triggers card return animation
 
   toggleTts() {
     set((s) => ({ ttsEnabled: !s.ttsEnabled }))
+  },
+
+  togglePassAndPlay() {
+    set((s) => ({ passAndPlay: !s.passAndPlay, pendingChoice: null }))
+    try {
+      const next = !get().passAndPlay
+      localStorage.setItem('faisla_passAndPlay', String(next))
+    } catch {}
+  },
+
+  /**
+   * P1 proposes a choice. In pass-and-play mode this sets pendingChoice
+   * and waits for P2 to confirm or reject. In solo mode it applies immediately.
+   */
+  proposeChoice(direction) {
+    const { passAndPlay } = get()
+    if (passAndPlay) {
+      set({ pendingChoice: direction })
+    } else {
+      get().applyChoice(direction)
+    }
+  },
+
+  /** P2 rejects the pending choice — animates card back, then clears state. */
+  rejectChoice() {
+    set({ pendingChoice: null, choiceRejected: true })
+    // Give the card's spring animation time to complete, then clear the flag
+    setTimeout(() => set({ choiceRejected: false }), 600)
   },
 
   setTtsLang(lang) {
@@ -101,6 +133,11 @@ export const useGameStore = create((set, get) => ({
       const uiLang = localStorage.getItem('faisla_uiLang')
       if (uiLang) set({ uiLang })
     } catch {}
+    // Restore pass-and-play preference
+    try {
+      const pap = localStorage.getItem('faisla_passAndPlay')
+      if (pap !== null) set({ passAndPlay: pap === 'true' })
+    } catch {}
   },
 
   /**
@@ -118,6 +155,13 @@ export const useGameStore = create((set, get) => ({
     const delta =
       direction === 'left' ? card.effectsLeft ?? initialMetrics : card.effectsRight ?? initialMetrics
 
+    // Haptic feedback — buzz on bad choices
+    if (isBadChoice(delta)) {
+      vibrateError()
+    } else {
+      vibrateSuccess()
+    }
+
     const newMetrics = applyPillarEffects(state.metrics, delta)
     const evaluation = evaluateGameState(newMetrics, card)
 
@@ -125,7 +169,7 @@ export const useGameStore = create((set, get) => ({
     const hasNext = nextIndex < state.deck.length
     const nextCard = hasNext ? state.deck[nextIndex] : getShuffledDeck()[0]
 
-    const dayIncrement = 30 + Math.floor(Math.random() * 31) // 30–60 days
+    const dayIncrement = 30 + Math.floor(Math.random() * 31)
     const newDay = state.day + dayIncrement
     const nextState = {
       metrics: newMetrics,
@@ -137,9 +181,9 @@ export const useGameStore = create((set, get) => ({
       day: evaluation.gameOver ? newDay : newDay,
       seasonPhase: inferSeasonPhase(newDay),
       bestDaysSurvived: state.bestDaysSurvived,
+      pendingChoice: null,
     }
 
-    // If game over, update best score
     if (nextState.gameOver) {
       if (newDay > (state.bestDaysSurvived ?? 0)) {
         nextState.bestDaysSurvived = newDay

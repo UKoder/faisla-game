@@ -7,6 +7,7 @@ export const translations = {
   'en-IN': {
     // Nav
     nav_home: 'Home',
+    nav_play: 'Play',
     nav_learn: 'Learn',
 
     // Home
@@ -94,6 +95,7 @@ export const translations = {
   'hi-IN': {
     // Nav
     nav_home: 'होम',
+    nav_play: 'खेलें',
     nav_learn: 'सीखें',
 
     // Home
@@ -181,6 +183,7 @@ export const translations = {
   'ta-IN': {
     // Nav
     nav_home: 'முகப்பு',
+    nav_play: 'விளையாடு',
     nav_learn: 'கற்றுக்கொள்',
 
     // Home
