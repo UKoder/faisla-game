@@ -1,107 +1,92 @@
 import { BrowserRouter, Routes, Route, NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion' // eslint-disable-line no-unused-vars
-import { useEffect } from 'react'
 import './index.css'
 import { useGameStore } from './state/gameStore'
+import { t } from './i18n/translations'
 import { PillarsBar } from './components/PillarsBar'
 import { DebtTrapVisualizer } from './components/DebtTrapVisualizer'
 import { DecisionCard } from './components/DecisionCard'
 import { NarratorHint } from './components/NarratorHint'
-import { speak, stopSpeech, isTtsSupported } from './services/tts'
 
-const phaseLabel = {
-  pre_sowing: 'Pre-Sowing',
-  sowing:     'Sowing',
-  growing:    'Growing',
-  harvest:    'Harvest',
-  off_season: 'Off-Season',
-}
+/* ─────────────────── LANG SWITCHER ─────────────────── */
+const LANGS = [
+  { code: 'en-IN', label: 'EN' },
+  { code: 'hi-IN', label: 'हि' },
+  { code: 'ta-IN', label: 'த' },
+]
 
-const fadeUp = {
-  initial:    { opacity: 0, y: 18 },
-  animate:    { opacity: 1, y: 0 },
-  exit:       { opacity: 0, y: -18 },
-  transition: { duration: 0.35, ease: 'easeOut' },
+function LangSwitcher() {
+  const uiLang    = useGameStore((s) => s.uiLang)
+  const setUiLang = useGameStore((s) => s.setUiLang)
+
+  return (
+    <div className="flex gap-1">
+      {LANGS.map(({ code, label }) => (
+        <button
+          key={code}
+          type="button"
+          onClick={() => setUiLang(code)}
+          className="text-[11px] px-2.5 py-1 rounded font-bold transition"
+          style={{
+            background: uiLang === code ? 'rgba(201,145,58,0.2)' : 'rgba(255,255,255,0.04)',
+            border: uiLang === code ? '1px solid rgba(201,145,58,0.5)' : '1px solid var(--border)',
+            color: uiLang === code ? 'var(--accent-amber)' : 'var(--text-faint)',
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  )
 }
 
 /* ─────────────────── LAYOUT ─────────────────── */
 function AppLayout({ children }) {
-  const { ttsEnabled, toggleTts, lightMode, toggleLightMode } = useGameStore()
-
-  const navLinks = [
-    { to: '/',           label: 'Home' },
-    { to: '/play',       label: 'Play' },
-    { to: '/how-it-works', label: 'Learn' },
-    { to: '/languages',  label: '🌐 Lang' },
-  ]
+  const uiLang = useGameStore((s) => s.uiLang)
 
   return (
-    <div
-      data-theme={lightMode ? 'light' : 'dark'}
-      className="bg-field min-h-screen flex justify-center relative overflow-hidden"
-      style={{ color: 'var(--text-primary)' }}
-    >
+    <div className="bg-animated min-h-screen w-full relative overflow-hidden" style={{ color: 'var(--text-primary)' }}>
       <div className="orb orb-1" />
       <div className="orb orb-2" />
-      <div className="orb orb-3" />
 
-      <div className="relative z-10 w-full max-w-md px-4 py-4 flex flex-col gap-4">
-
-        {/* Header — logo + theme/TTS toggles only */}
-        <header className="nm-card rounded-3xl px-5 py-3.5 flex items-center justify-between">
+      <div className="relative z-10 w-full px-4 py-4 flex flex-col gap-4 max-w-5xl mx-auto">
+        <header className="nm-card rounded-2xl px-5 py-3 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🌾</span>
-            <div className="flex flex-col leading-none">
-              <span className="text-base font-black tracking-[0.2em] uppercase"
-                style={{ background: 'linear-gradient(90deg,#d4a843,#f0c96a,#4caf50)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            <span className="text-xl">🌾</span>
+            <div className="flex flex-col">
+              <span className="text-base font-bold tracking-widest uppercase" style={{ color: 'var(--accent-amber)' }}>
                 Faisla
               </span>
-              <span className="text-xs tracking-widest uppercase mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                Farmer decision game
-              </span>
+              <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>Farmer Decision Game</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={toggleLightMode}
-              title={lightMode ? 'Switch to dark mode' : 'Switch to light mode'}
-              className="nm-btn w-9 h-9 rounded-full flex items-center justify-center text-base"
-            >
-              {lightMode ? '🌙' : '☀️'}
-            </button>
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Language switcher */}
+            <LangSwitcher />
 
-            {isTtsSupported() && (
-              <button
-                type="button"
-                onClick={() => { toggleTts(); stopSpeech() }}
-                title={ttsEnabled ? 'Mute voice' : 'Unmute voice'}
-                className="nm-btn w-9 h-9 rounded-full flex items-center justify-center text-base"
-              >
-                {ttsEnabled ? '🔊' : '🔇'}
-              </button>
-            )}
+            {/* Nav links */}
+            <nav className="flex gap-2 text-xs">
+              {[
+                { to: '/',             key: 'nav_home' },
+                { to: '/how-it-works', key: 'nav_learn' },
+              ].map(({ to, key }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  style={({ isActive }) => isActive
+                    ? { background: 'var(--accent-green)', color: '#0e1209', padding: '6px 14px', borderRadius: '8px', fontWeight: 600 }
+                    : { background: 'rgba(255,255,255,0.04)', color: 'var(--text-muted)', border: '1px solid var(--border)', padding: '6px 14px', borderRadius: '8px', fontWeight: 500 }
+                  }
+                >
+                  {t(uiLang, key)}
+                </NavLink>
+              ))}
+            </nav>
           </div>
         </header>
 
-        {/* Nav bar — separate row so it never overflows */}
-        <nav className="nm-card rounded-2xl px-3 py-2 flex gap-2 justify-center">
-          {navLinks.map(({ to, label }) => (
-            <NavLink key={to} to={to}
-              className={({ isActive }) =>
-                `nav-pill flex-1 text-center px-2 py-1.5 rounded-xl text-xs font-bold tracking-wide ${
-                  isActive ? 'btn-wheat' : 'nm-btn'
-                }`
-              }
-            >
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* Main */}
-        <main className="flex-1 nm-card rounded-3xl px-5 py-5 flex justify-center">
+        <main className="flex-1 nm-card rounded-2xl px-6 py-6 flex justify-center">
           <AnimatePresence mode="wait">
             {children}
           </AnimatePresence>
@@ -115,48 +100,103 @@ function AppLayout({ children }) {
 function HomeScreen() {
   const navigate    = useNavigate()
   const startNewRun = useGameStore((s) => s.startNewRun)
-
-  const features = [
-    { icon: '↔️', title: 'Swipe to decide', desc: 'Left or right on loans, insurance, mandi rates, and more.' },
-    { icon: '⚖️', title: 'Four pillars',    desc: 'Balance family, crops, finance, and resilience.' },
-    { icon: '📴', title: 'Offline-first',   desc: 'Works without internet. Add to Home Screen.' },
-    { icon: '🎓', title: 'Real scenarios',  desc: 'Based on actual decisions rural farmers face.' },
-  ]
+  const uiLang      = useGameStore((s) => s.uiLang)
+  const T = (key) => t(uiLang, key)
 
   return (
-    <motion.div className="flex flex-col gap-4 w-full" {...fadeUp}>
-      <div className="nm-glow-wheat rounded-3xl px-5 py-5 text-center">
-        <div className="text-5xl mb-3 animate-bounce" style={{ animationDuration: '2.5s' }}>🚜</div>
-        <h1 className="text-xl font-black leading-snug"
-          style={{ background: 'linear-gradient(90deg,#d4a843,#f0c96a,#8bc34a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          Survive the season.
-        </h1>
-        <h1 className="text-xl font-black leading-snug" style={{ color: 'var(--text-primary)' }}>
-          Keep your farm out of debt.
-        </h1>
-        <p className="mt-2 text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-          Every swipe is a real decision Indian farmers face across an agricultural year.
-        </p>
+    <motion.div
+      className="flex flex-col gap-8 w-full"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -16 }}
+      transition={{ duration: 0.35 }}
+    >
+      {/* Hero */}
+      <div className="w-full rounded-2xl overflow-hidden"
+        style={{
+          background: 'linear-gradient(160deg, rgba(90,120,55,0.12) 0%, rgba(160,100,40,0.08) 100%)',
+          border: '1px solid rgba(122,173,90,0.15)',
+        }}
+      >
+        <div className="px-8 py-10 flex flex-col md:flex-row items-center gap-10">
+          <div className="flex-1 text-center md:text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md mb-5 text-xs font-semibold tracking-widest uppercase"
+              style={{ background: 'rgba(122,173,90,0.1)', border: '1px solid rgba(122,173,90,0.25)', color: 'var(--accent-green)' }}>
+              {T('home_badge')}
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black leading-tight mb-2" style={{ color: 'var(--accent-amber)' }}>
+              {T('home_h1')}
+            </h1>
+            <h2 className="text-3xl md:text-4xl font-black leading-tight mb-4" style={{ color: 'var(--text-primary)' }}>
+              {T('home_h2')}
+            </h2>
+            <p className="leading-relaxed text-sm max-w-lg mb-7" style={{ color: 'var(--text-muted)' }}>
+              {T('home_desc')}
+            </p>
+            <button
+              type="button"
+              onClick={() => { startNewRun(); navigate('/play') }}
+              className="btn-glow px-9 py-3.5 rounded-lg text-sm font-bold tracking-wide"
+            >
+              {T('home_cta')}
+            </button>
+          </div>
+          <div className="flex-shrink-0 text-center">
+            <div className="text-8xl mb-4">🌾</div>
+            <div className="flex gap-2 justify-center">
+              {['👨‍👩‍👧', '🌱', '💰', '🛡️'].map((icon, i) => (
+                <div key={i} className="w-11 h-11 rounded-xl flex items-center justify-center text-xl"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)' }}>
+                  {icon}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        {features.map(({ icon, title, desc }) => (
-          <div key={title} className="feature-card nm-raised rounded-2xl px-4 py-4"
-            style={{ border: '1px solid var(--border-wheat)' }}>
-            <div className="text-2xl mb-2">{icon}</div>
-            <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{title}</p>
-            <p className="mt-1 text-xs leading-snug" style={{ color: 'var(--text-muted)' }}>{desc}</p>
+      {/* Feature grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { icon: '↔️', titleKey: 'feat_swipe_title',   descKey: 'feat_swipe_desc' },
+          { icon: '⚖️', titleKey: 'feat_pillars_title', descKey: 'feat_pillars_desc' },
+          { icon: '📴', titleKey: 'feat_offline_title', descKey: 'feat_offline_desc' },
+          { icon: '🎓', titleKey: 'feat_real_title',    descKey: 'feat_real_desc' },
+        ].map(({ icon, titleKey, descKey }) => (
+          <div key={titleKey} className="rounded-xl px-4 py-4 flex flex-col gap-2"
+            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}>
+            <div className="text-2xl">{icon}</div>
+            <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{T(titleKey)}</p>
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{T(descKey)}</p>
           </div>
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={() => { startNewRun(); navigate('/play') }}
-        className="btn-wheat w-full rounded-full py-3.5 text-sm tracking-wide"
-      >
-        🌱 Start New Season
-      </button>
+      {/* Scheme highlights */}
+      <div>
+        <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--text-faint)' }}>
+          {T('home_schemes_title')}
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+          {[
+            { icon: '🏦', nameKey: 'scheme_kcc_name',   descKey: 'scheme_kcc_desc' },
+            { icon: '🌧️', nameKey: 'scheme_pmfby_name', descKey: 'scheme_pmfby_desc' },
+            { icon: '💵', nameKey: 'scheme_pmkisan_name',descKey: 'scheme_pmkisan_desc' },
+            { icon: '🏪', nameKey: 'scheme_enam_name',  descKey: 'scheme_enam_desc' },
+            { icon: '👩‍👩‍👧', nameKey: 'scheme_shg_name', descKey: 'scheme_shg_desc' },
+            { icon: '🌱', nameKey: 'scheme_soil_name',  descKey: 'scheme_soil_desc' },
+          ].map(({ icon, nameKey, descKey }) => (
+            <div key={nameKey} className="flex items-center gap-3 rounded-xl px-4 py-3"
+              style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid var(--border)' }}>
+              <span className="text-xl shrink-0">{icon}</span>
+              <div>
+                <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{T(nameKey)}</p>
+                <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{T(descKey)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </motion.div>
   )
 }
@@ -166,19 +206,26 @@ function formatSeasonsAndDays(totalDays) {
   return { seasons: Math.floor(totalDays / 365), days: totalDays % 365 }
 }
 
-function lossReasonMessage(reason) {
+function lossReasonKey(reason) {
   switch (reason) {
-    case 'family_collapse':     return 'Your family welfare dropped to zero — stress and hardship forced you to stop.'
-    case 'crops_collapse':      return 'Your crops failed completely — the field could not sustain another season.'
-    case 'finance_collapse':    return 'Your finances collapsed — debt and cash flow left the farm insolvent.'
-    case 'resilience_collapse': return 'Your resilience ran out — repeated shocks left you unable to recover.'
-    case 'year_complete':       return 'You completed a full farming year. Few farmers manage such balance.'
-    default:                    return 'Your farm could not continue this season.'
+    case 'family_collapse':     return 'loss_family'
+    case 'crops_collapse':      return 'loss_crops'
+    case 'finance_collapse':    return 'loss_finance'
+    case 'resilience_collapse': return 'loss_resilience'
+    case 'year_complete':       return 'loss_year'
+    default:                    return 'loss_default'
   }
 }
 
 function lossIcon(reason) {
-  return { family_collapse:'👨‍👩‍👧', crops_collapse:'🌾', finance_collapse:'💸', resilience_collapse:'🛡️', year_complete:'🏆' }[reason] ?? '💔'
+  switch (reason) {
+    case 'family_collapse':     return '👨‍👩‍👧'
+    case 'crops_collapse':      return '🌾'
+    case 'finance_collapse':    return '💸'
+    case 'resilience_collapse': return '🛡️'
+    case 'year_complete':       return '🏆'
+    default:                    return '💔'
+  }
 }
 
 /* ─────────────────── PLAY ─────────────────── */
@@ -186,240 +233,154 @@ function PlayScreen() {
   const {
     deck, currentIndex, metrics, inDebtTrap,
     gameOver, gameOverReason, day, seasonPhase,
-    bestDaysSurvived, applyChoice, reset, ttsEnabled, ttsLang,
+    bestDaysSurvived, applyChoice, reset, uiLang,
   } = useGameStore()
 
-  const card    = deck[currentIndex]
+  const T    = (key) => t(uiLang, key)
+  const card = deck[currentIndex]
   const current = formatSeasonsAndDays(day)
   const best    = formatSeasonsAndDays(bestDaysSurvived ?? 0)
   const isWin   = gameOverReason === 'year_complete'
 
-  function cardPromptForLang(c) {
+  // Localized card prompt
+  function getCardPrompt(c) {
     if (!c) return ''
-    if (ttsLang === 'hi-IN' && c.prompt_hi) return c.prompt_hi
-    if (ttsLang === 'ta-IN' && c.prompt_ta) return c.prompt_ta
-    return c.prompt
+    if (uiLang === 'hi-IN' && c.prompt_hi) return c.prompt_hi
+    if (uiLang === 'ta-IN' && c.prompt_ta) return c.prompt_ta
+    return c.prompt ?? ''
   }
-
-  useEffect(() => {
-    if (!ttsEnabled || !card) return
-    speak(cardPromptForLang(card), { lang: ttsLang })
-    return () => stopSpeech()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [card?.id, ttsEnabled, ttsLang])
 
   if (gameOver) {
     return (
-      <motion.div className="flex flex-col gap-4 w-full" {...fadeUp}>
-        <div className={`rounded-3xl px-5 py-5 text-center ${isWin ? 'nm-glow-green' : 'nm-glow-red'}`}>
-          <div className="text-5xl mb-2">{lossIcon(gameOverReason)}</div>
-          <h2 className={`text-lg font-black ${isWin ? 'text-green-500' : 'text-red-500'}`}>
-            {isWin ? 'Season Complete!' : 'Game Over'}
+      <motion.div
+        className="flex flex-col items-center justify-center gap-5 w-full max-w-xl mx-auto"
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.35 }}
+      >
+        <div className={`w-full rounded-2xl px-8 py-8 text-center ${isWin ? 'nm-card-glow-green' : 'nm-card-glow-red'}`}>
+          <div className="text-5xl mb-3">{lossIcon(gameOverReason)}</div>
+          <h2 className="text-xl font-black mb-2" style={{ color: isWin ? 'var(--accent-green)' : 'var(--accent-red)' }}>
+            {isWin ? T('play_season_complete') : T('play_game_over')}
           </h2>
-          <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-            {lossReasonMessage(gameOverReason)}
+          <p className="text-sm leading-relaxed max-w-sm mx-auto" style={{ color: 'var(--text-muted)' }}>
+            {T(lossReasonKey(gameOverReason))}
           </p>
-          <div className="mt-4 grid grid-cols-2 gap-3 text-left">
-            <div className="nm-inset rounded-2xl px-4 py-3">
-              <p className="text-xs uppercase tracking-widest font-bold" style={{ color: 'var(--text-muted)' }}>This run</p>
-              <p className="mt-1 font-black text-sm" style={{ color: 'var(--text-primary)' }}>
-                S{current.seasons + 1} · D{current.days}
-              </p>
+          <div className="mt-6 grid grid-cols-2 gap-3 text-left max-w-xs mx-auto">
+            <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)' }}>
+              <p className="text-[10px] uppercase tracking-widest font-bold mb-1" style={{ color: 'var(--text-faint)' }}>{T('play_this_run')}</p>
+              <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>S{current.seasons + 1} · D{current.days}</p>
             </div>
-            <div className="nm-inset rounded-2xl px-4 py-3"
-              style={{ border: '1px solid rgba(76,175,80,0.25)' }}>
-              <p className="text-xs uppercase tracking-widest font-bold text-green-600">Best run</p>
-              <p className="mt-1 font-black text-sm text-green-500">
-                S{best.seasons + 1} · D{best.days}
-              </p>
+            <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(122,173,90,0.07)', border: '1px solid rgba(122,173,90,0.25)' }}>
+              <p className="text-[10px] uppercase tracking-widest font-bold mb-1" style={{ color: 'var(--accent-green)' }}>{T('play_best_run')}</p>
+              <p className="font-bold text-sm" style={{ color: 'var(--accent-green)' }}>S{best.seasons + 1} · D{best.days}</p>
             </div>
           </div>
         </div>
-
-        <PillarsBar metrics={metrics} />
-
-        <button type="button" className="btn-wheat w-full rounded-full py-3.5 text-sm" onClick={reset}>
-          🔄 Try Again
+        <div className="w-full"><PillarsBar metrics={metrics} /></div>
+        <button type="button" className="btn-glow px-10 py-3 rounded-lg text-sm font-bold" onClick={reset}>
+          {T('play_try_again')}
         </button>
       </motion.div>
     )
   }
 
   return (
-    <motion.div className="relative flex flex-col gap-3 w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div
+      className="relative flex flex-col md:flex-row gap-6 w-full"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
       <DebtTrapVisualizer active={inDebtTrap} />
 
-      <div className="nm-raised rounded-2xl px-4 py-3" style={{ border: '1px solid var(--border-wheat)' }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">🌤️</span>
-            <div>
-              <span className="text-sm font-black" style={{ color: 'var(--text-primary)' }}>
-                Season {current.seasons + 1}
-              </span>
-              <span className="text-xs ml-2" style={{ color: 'var(--text-muted)' }}>
-                Day {current.days}
-              </span>
-            </div>
+      {/* Left sidebar */}
+      <div className="md:w-64 flex flex-col gap-4 shrink-0">
+        <div className="rounded-xl px-4 py-4"
+          style={{ background: 'rgba(122,173,90,0.07)', border: '1px solid rgba(122,173,90,0.18)' }}>
+          <div className="flex items-center justify-between mb-1">
+            <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+              {T('play_season')} {current.seasons + 1}
+              <span className="ml-2 text-xs font-normal" style={{ color: 'var(--text-muted)' }}>{T('play_day')} {current.days}</span>
+            </span>
+            <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-md phase-${seasonPhase}`}>
+              {T(`phase_${seasonPhase}`)}
+            </span>
           </div>
-          <span className={`text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full phase-${seasonPhase}`}>
-            {phaseLabel[seasonPhase] ?? seasonPhase}
-          </span>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            {T('play_balance')}
+          </p>
         </div>
-        <p className="mt-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
-          Keep family, field, money, and safety in balance.
-        </p>
+
+        <PillarsBar metrics={metrics} />
+
+        <div className="flex items-center justify-between text-xs px-1" style={{ color: 'var(--text-faint)' }}>
+          <span>🏆 {T('play_best')}: S{best.seasons + 1} · D{best.days}</span>
+          <span>{currentIndex + 1}/{deck.length}</span>
+        </div>
+
+        <NarratorHint card={card} />
       </div>
 
-      <PillarsBar metrics={metrics} />
-      <DecisionCard card={card} onChoice={applyChoice} />
-
-      <div className="flex items-center justify-between text-xs px-1" style={{ color: 'var(--text-muted)' }}>
-        <span>🏆 Best: S{best.seasons + 1} · D{best.days}</span>
-        <span>{currentIndex + 1} / {deck.length} cards</span>
+      {/* Card area */}
+      <div className="flex-1 flex items-start justify-center">
+        <DecisionCard card={card} onChoice={applyChoice} localizedPrompt={getCardPrompt(card)} uiLang={uiLang} />
       </div>
-
-      <NarratorHint narrator={card?.narrator} audioKey={card?.audioKey} cardPrompt={cardPromptForLang(card)} />
     </motion.div>
   )
 }
 
 /* ─────────────────── LEARN ─────────────────── */
 function HowItWorksScreen() {
-  const steps = [
-    { icon: '👨‍🌾', text: 'You play as a small Indian farmer across one agricultural year.' },
-    { icon: '🃏', text: 'Each card is a real decision: loan offers, insurance, mandi prices, fraud calls, and more.' },
-    { icon: '⚖️', text: 'Every swipe changes four pillars: Family Welfare, Crop Health, Financial Standing, and Risk Resilience.' },
-    { icon: '📉', text: 'If any pillar collapses, the season ends — but you keep the learning, not the loss.' },
-    { icon: '📴', text: 'Fully offline-first. Progress saved locally. No account needed.' },
-  ]
+  const uiLang = useGameStore((s) => s.uiLang)
+  const T = (key) => t(uiLang, key)
 
   return (
-    <motion.div className="flex flex-col gap-4 w-full" {...fadeUp}>
-      <h2 className="text-lg font-black"
-        style={{ background: 'linear-gradient(90deg,#d4a843,#8bc34a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-        How Faisla works
-      </h2>
-      <div className="space-y-2">
-        {steps.map(({ icon, text }, i) => (
-          <motion.div key={i}
-            className="feature-card nm-raised flex items-start gap-3 rounded-2xl px-3 py-3"
-            style={{ border: '1px solid var(--border-wheat)' }}
-            initial={{ opacity: 0, x: -12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.07, duration: 0.3 }}
-          >
-            <span className="text-xl shrink-0">{icon}</span>
-            <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{text}</p>
-          </motion.div>
-        ))}
-      </div>
-    </motion.div>
-  )
-}
-
-/* ─────────────────── LANGUAGES ─────────────────── */
-function LanguagesScreen() {
-  const { ttsLang, setTtsLang, ttsEnabled } = useGameStore()
-
-  const options = [
-    {
-      code: 'en-IN',
-      name: 'English',
-      native: 'English',
-      icon: '🇮🇳',
-      sample: 'You need money for seeds and fertilizer.',
-      note: 'Default language. Widely supported on all devices.',
-    },
-    {
-      code: 'hi-IN',
-      name: 'Hindi',
-      native: 'हिन्दी',
-      icon: '🇮🇳',
-      sample: 'आपको बीज और खाद के लिए पैसों की ज़रूरत है।',
-      note: 'Requires a Hindi voice installed on your device. Available on most Android phones and Windows.',
-    },
-    {
-      code: 'ta-IN',
-      name: 'Tamil',
-      native: 'தமிழ்',
-      icon: '🇮🇳',
-      sample: 'உங்களுக்கு விதைகள் மற்றும் உரத்திற்கு பணம் தேவை.',
-      note: 'Requires a Tamil voice installed on your device. Available on Android and some desktop browsers.',
-    },
-  ]
-
-  function handleSelect(code) {
-    setTtsLang(code)
-    stopSpeech()
-    if (ttsEnabled) {
-      const opt = options.find((o) => o.code === code)
-      if (opt) speak(opt.sample, { lang: code })
-    }
-  }
-
-  return (
-    <motion.div className="flex flex-col gap-4 w-full" {...fadeUp}>
+    <motion.div
+      className="flex flex-col gap-6 w-full"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -16 }}
+      transition={{ duration: 0.35 }}
+    >
       <div>
-        <h2 className="text-lg font-black"
-          style={{ background: 'linear-gradient(90deg,#d4a843,#8bc34a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          Voice Language
-        </h2>
-        <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-          Choose the language for text-to-speech. Tap a card to select and hear a sample.
-        </p>
+        <h2 className="text-2xl font-black mb-1" style={{ color: 'var(--accent-amber)' }}>{T('learn_title')}</h2>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{T('learn_subtitle')}</p>
       </div>
 
-      <div className="flex flex-col gap-3">
-        {options.map(({ code, name, native, icon, sample, note }) => {
-          const active = ttsLang === code
+      <div className="grid md:grid-cols-2 gap-3">
+        {['learn_p1','learn_p2','learn_p3','learn_p4','learn_p5','learn_p6'].map((key, i) => {
+          const icons = ['👨‍🌾','🃏','⚖️','📉','📴','🏛️']
           return (
-            <button
-              key={code}
-              type="button"
-              onClick={() => handleSelect(code)}
-              className={`w-full text-left rounded-2xl px-4 py-4 transition-all duration-200 ${
-                active ? 'nm-glow-wheat' : 'nm-raised feature-card'
-              }`}
-              style={{ border: active ? '1px solid rgba(212,168,67,0.5)' : '1px solid var(--border-wheat)' }}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-2xl">{icon}</span>
-                  <div>
-                    <span className="text-sm font-black" style={{ color: 'var(--text-primary)' }}>{name}</span>
-                    <span className="ml-2 text-xs font-bold" style={{ color: 'var(--text-muted)' }}>{native}</span>
-                  </div>
-                </div>
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                  active ? 'border-yellow-400' : 'border-gray-500'
-                }`}>
-                  {active && <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />}
-                </div>
-              </div>
-
-              <p className="text-xs italic leading-snug mb-2" style={{ color: 'var(--text-secondary)' }}>
-                "{sample}"
-              </p>
-              <p className="text-xs leading-snug" style={{ color: 'var(--text-muted)' }}>{note}</p>
-
-              {active && (
-                <div className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-bold"
-                  style={{ color: '#d4a843' }}>
-                  <span>✓</span>
-                  <span>Active — voice will read cards in {name}</span>
-                </div>
-              )}
-            </button>
+            <div key={key} className="flex items-start gap-4 rounded-xl px-5 py-4"
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}>
+              <span className="text-xl shrink-0">{icons[i]}</span>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{T(key)}</p>
+            </div>
           )
         })}
       </div>
 
-      {!ttsEnabled && (
-        <div className="nm-inset rounded-2xl px-4 py-3 text-xs" style={{ color: 'var(--text-muted)' }}>
-          🔇 Voice is muted. Tap the 🔊 button in the header to enable audio.
+      <div className="rounded-xl px-6 py-5"
+        style={{ background: 'rgba(122,173,90,0.06)', border: '1px solid rgba(122,173,90,0.2)' }}>
+        <h3 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--accent-green)' }}>
+          {T('learn_pillars_title')}
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { icon: '👨‍👩‍👧', labelKey: 'pillar_family_label',     descKey: 'pillar_family_desc',     color: 'var(--accent-blue)'  },
+            { icon: '🌾',     labelKey: 'pillar_crops_label',      descKey: 'pillar_crops_desc',      color: 'var(--accent-green)' },
+            { icon: '💰',     labelKey: 'pillar_finance_label',    descKey: 'pillar_finance_desc',    color: 'var(--accent-amber)' },
+            { icon: '🛡️',    labelKey: 'pillar_resilience_label', descKey: 'pillar_resilience_desc', color: '#a07850'             },
+          ].map(({ icon, labelKey, descKey, color }) => (
+            <div key={labelKey} className="text-center">
+              <div className="text-3xl mb-1">{icon}</div>
+              <p className="text-xs font-bold mb-0.5" style={{ color }}>{T(labelKey)}</p>
+              <p className="text-[11px]" style={{ color: 'var(--text-faint)' }}>{T(descKey)}</p>
+            </div>
+          ))}
         </div>
-      )}
+      </div>
     </motion.div>
   )
 }
@@ -433,7 +394,6 @@ export default function App() {
           <Route path="/"             element={<HomeScreen />} />
           <Route path="/play"         element={<PlayScreen />} />
           <Route path="/how-it-works" element={<HowItWorksScreen />} />
-          <Route path="/languages"    element={<LanguagesScreen />} />
         </Routes>
       </AppLayout>
     </BrowserRouter>

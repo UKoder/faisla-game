@@ -1,14 +1,16 @@
 /**
  * Text-to-speech — Web Speech API, fully offline.
+ * Supports en-IN, hi-IN, ta-IN.
  *
  * Key fixes:
- * - Don't force a voice when no exact match exists. Setting utterance.lang
- *   and letting the browser pick is more reliable than forcing voices[0].
- * - Re-fetch voices on every call (Chrome may load them lazily after first call).
- * - voiceschanged listener kept for initial cache warm-up.
+ * - Chrome loads voices asynchronously. We wait for voiceschanged before speaking.
+ * - If voices aren't ready yet, we queue the utterance and fire after voiceschanged.
+ * - Always set utterance.lang so the browser picks the right voice even without explicit voice assignment.
+ * - pickVoice tries exact → region → prefix match, falls back to null (browser default).
  */
 
 let cachedVoices = []
+let pendingUtterance = null   // queued utterance waiting for voices to load
 
 function refreshVoices() {
   if (!window.speechSynthesis) return
@@ -16,77 +18,100 @@ function refreshVoices() {
   if (list.length) cachedVoices = list
 }
 
-function setupVoiceListener() {
-  if (!window.speechSynthesis) return
+function onVoicesChanged() {
   refreshVoices()
-  // Chrome fires this event once voices are asynchronously ready
-  window.speechSynthesis.addEventListener('voiceschanged', refreshVoices)
+  // Fire any queued utterance now that voices are available
+  if (pendingUtterance) {
+    const u = pendingUtterance
+    pendingUtterance = null
+    const voice = pickVoice(u.lang)
+    if (voice) u.voice = voice
+    setTimeout(() => window.speechSynthesis?.speak(u), 50)
+  }
 }
 
-if (typeof window !== 'undefined') setupVoiceListener()
+if (typeof window !== 'undefined') {
+  refreshVoices()
+  window.speechSynthesis?.addEventListener('voiceschanged', onVoicesChanged)
+}
 
 /**
  * Find the best available voice for a given BCP-47 lang tag.
- * Returns null if no reasonable match — caller should NOT set utterance.voice
- * in that case, letting the browser use its own default for that language.
  * @param {string} lang  e.g. 'hi-IN', 'ta-IN', 'en-IN'
  * @returns {SpeechSynthesisVoice|null}
  */
 function pickVoice(lang) {
   refreshVoices()
   const voices = cachedVoices
-
   if (!voices.length) return null
 
   const langLower    = lang.toLowerCase()
-  const prefix       = langLower.split('-')[0]   // e.g. 'hi', 'ta', 'en'
-  const regionSuffix = langLower.split('-')[1]   // e.g. 'in'
+  const prefix       = langLower.split('-')[0]      // 'hi', 'ta', 'en'
+  const regionSuffix = langLower.split('-')[1] ?? '' // 'in'
 
-  // 1. Exact match (case-insensitive)
+  // 1. Exact match
   const exact = voices.find((v) => v.lang.toLowerCase() === langLower)
   if (exact) return exact
 
-  // 2. Same language + same region (e.g. hi-IN matches hi-IN-x-something)
+  // 2. Same language + same region prefix
   const sameRegion = voices.find(
     (v) => v.lang.toLowerCase().startsWith(prefix + '-' + regionSuffix)
   )
   if (sameRegion) return sameRegion
 
-  // 3. Same language prefix only (e.g. 'hi' matches 'hi-IN', 'hi-Latn')
+  // 3. Same language prefix only
   const samePrefix = voices.find((v) => v.lang.toLowerCase().startsWith(prefix))
   if (samePrefix) return samePrefix
 
-  // 4. No match — return null so the browser picks its own default
   return null
 }
 
 /**
- * Speak text aloud.
+ * Speak text aloud in the given language.
+ * If voices haven't loaded yet, queues the utterance until voiceschanged fires.
  * @param {string} text
  * @param {{ lang?: string; rate?: number; pitch?: number }} opts
  */
-export function speak(text, { lang = 'en-IN', rate = 0.92, pitch = 1 } = {}) {
+export function speak(text, { lang = 'en-IN', rate = 0.9, pitch = 1 } = {}) {
   if (!text || !window.speechSynthesis) return
 
   window.speechSynthesis.cancel()
+  pendingUtterance = null
 
   const utterance  = new SpeechSynthesisUtterance(text)
-  utterance.lang   = lang    // always set lang — browser uses this even without a voice
+  utterance.lang   = lang
   utterance.rate   = rate
   utterance.pitch  = pitch
 
+  refreshVoices()
+
+  if (cachedVoices.length === 0) {
+    // Voices not ready yet — queue and wait for voiceschanged
+    pendingUtterance = utterance
+    return
+  }
+
   const voice = pickVoice(lang)
-  // Only assign voice when we found a real match — avoids forcing wrong language
   if (voice) utterance.voice = voice
 
-  // 50 ms gap lets cancel() flush (fixes Chrome silent-after-cancel bug)
-  setTimeout(() => window.speechSynthesis.speak(utterance), 50)
+  // 60ms gap lets cancel() flush (fixes Chrome silent-after-cancel bug)
+  setTimeout(() => window.speechSynthesis?.speak(utterance), 60)
 }
 
 export function stopSpeech() {
+  pendingUtterance = null
   window.speechSynthesis?.cancel()
 }
 
 export function isTtsSupported() {
   return typeof window !== 'undefined' && 'speechSynthesis' in window
+}
+
+/**
+ * Returns list of available voices for debugging.
+ * Useful to check if hi-IN / ta-IN voices are installed on the device.
+ */
+export function listVoices() {
+  refreshVoices()
+  return cachedVoices.map((v) => `${v.name} (${v.lang})`)
 }

@@ -31,6 +31,7 @@ export const useGameStore = create((set, get) => ({
   bestDaysSurvived: 0,
   ttsEnabled: true,
   ttsLang: 'en-IN',   // 'en-IN' | 'hi-IN' | 'ta-IN'
+  uiLang: 'en-IN',    // UI display language
   lightMode: false,
 
   toggleTts() {
@@ -40,6 +41,11 @@ export const useGameStore = create((set, get) => ({
   setTtsLang(lang) {
     set({ ttsLang: lang })
     try { localStorage.setItem('faisla_ttsLang', lang) } catch {}
+  },
+
+  setUiLang(lang) {
+    set({ uiLang: lang })
+    try { localStorage.setItem('faisla_uiLang', lang) } catch {}
   },
 
   toggleLightMode() {
@@ -89,6 +95,11 @@ export const useGameStore = create((set, get) => ({
     try {
       const lang = localStorage.getItem('faisla_ttsLang')
       if (lang) set({ ttsLang: lang })
+    } catch {}
+    // Restore UI language preference
+    try {
+      const uiLang = localStorage.getItem('faisla_uiLang')
+      if (uiLang) set({ uiLang })
     } catch {}
   },
 
