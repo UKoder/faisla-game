@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './index.css'
 import { useOrientation } from './hooks/useOrientation'
+import { CropSetup } from './components/CropSetup'
 
 // Portrait layout screens
 import {
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="/play"         element={<Play />} />
           <Route path="/how-it-works" element={<Learn />} />
           <Route path="/languages"    element={<Languages />} />
+          <Route path="/setup"        element={<CropSetup />} />
         </Routes>
       </Shell>
     </BrowserRouter>

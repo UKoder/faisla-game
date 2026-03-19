@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { getShuffledDeck } from '../scenarios/faislaDeck'
+import { getShuffledDeck, faislaDeck } from '../scenarios/faislaDeck'
+import { buildPersonalizedDeck } from '../scenarios/cropDecks'
 import { applyPillarEffects, evaluateGameState } from '../engine/consequences'
 import { saveLastRun, loadLastRun, saveBestRun, loadBestRun } from '../services/storage'
 import { isBadChoice, vibrateError, vibrateSuccess } from '../services/haptics'
@@ -36,7 +37,9 @@ export const useGameStore = create((set, get) => ({
   lightMode: false,
   passAndPlay: false,
   pendingChoice: null,
-  choiceRejected: false,   // true briefly after P2 rejects — triggers card return animation
+  choiceRejected: false,
+  /** @type {{ name: string, crops: string[], acreage: number } | null} */
+  farmerProfile: null,
 
   toggleTts() {
     set((s) => ({ ttsEnabled: !s.ttsEnabled }))
@@ -48,6 +51,28 @@ export const useGameStore = create((set, get) => ({
       const next = !get().passAndPlay
       localStorage.setItem('faisla_passAndPlay', String(next))
     } catch {}
+  },
+
+  setFarmerProfile(profile) {
+    set({ farmerProfile: profile })
+    try { localStorage.setItem('faisla_farmerProfile', JSON.stringify(profile)) } catch {}
+  },
+
+  startPersonalizedRun(profile) {
+    const deck = buildPersonalizedDeck(profile.crops, [...faislaDeck])
+    set({
+      farmerProfile: profile,
+      day: 1,
+      seasonPhase: 'pre_sowing',
+      deck,
+      currentIndex: 0,
+      metrics: initialMetrics,
+      inDebtTrap: false,
+      gameOver: false,
+      gameOverReason: null,
+      bestDaysSurvived: get().bestDaysSurvived ?? 0,
+    })
+    try { localStorage.setItem('faisla_farmerProfile', JSON.stringify(profile)) } catch {}
   },
 
   /**
@@ -137,6 +162,11 @@ export const useGameStore = create((set, get) => ({
     try {
       const pap = localStorage.getItem('faisla_passAndPlay')
       if (pap !== null) set({ passAndPlay: pap === 'true' })
+    } catch {}
+    // Restore farmer profile
+    try {
+      const fp = localStorage.getItem('faisla_farmerProfile')
+      if (fp) set({ farmerProfile: JSON.parse(fp) })
     } catch {}
   },
 

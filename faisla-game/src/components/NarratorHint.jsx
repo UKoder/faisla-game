@@ -92,8 +92,8 @@ export function NarratorHint({ card }) {
             <button type="button" onClick={toggleTts}
               className="text-xs px-2.5 py-1 rounded transition"
               style={{
-                background: ttsEnabled ? 'rgba(76,175,80,0.12)' : 'rgba(255,255,255,0.04)',
-                border: ttsEnabled ? '1px solid rgba(76,175,80,0.3)' : '1px solid var(--p-border-wheat)',
+                background: ttsEnabled ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.04)',
+                border: ttsEnabled ? '1px solid rgba(16,185,129,0.3)' : '1px solid var(--p-border-wheat)',
                 color: ttsEnabled ? 'var(--p-leaf)' : 'var(--p-text-muted)',
               }}>
               {ttsEnabled ? '🔊 On' : '🔇 Off'}

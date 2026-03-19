@@ -13,6 +13,7 @@ import { NarratorHint } from '../components/NarratorHint'
 import { t } from '../i18n/translations'
 import { speak, stopSpeech } from '../services/tts'
 import { PassAndPlayOverlay } from '../components/PassAndPlayOverlay'
+import { InstallPrompt } from '../components/InstallPrompt'
 
 const fadeUp = {
   initial:    { opacity: 0, y: 18 },
@@ -40,6 +41,7 @@ export function PortraitShell({ children }) {
     { to: '/',             label: t(uiLang, 'nav_home') },
     { to: '/play',         label: t(uiLang, 'nav_play') },
     { to: '/how-it-works', label: t(uiLang, 'nav_learn') },
+    { to: '/setup',        label: '🌱' },
     { to: '/languages',    label: '🌐' },
   ]
 
@@ -55,7 +57,7 @@ export function PortraitShell({ children }) {
             <span className="text-2xl">🌾</span>
             <div className="flex flex-col leading-none">
               <span className="text-base font-black tracking-[0.2em] uppercase"
-                style={{ background: 'linear-gradient(90deg,#d4a843,#f0c96a,#4caf50)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                style={{ color: '#f59e0b' }}>
                 Faisla
               </span>
               <span className="text-xs tracking-widest uppercase mt-0.5" style={{ color: 'var(--p-text-muted)' }}>
@@ -76,9 +78,9 @@ export function PortraitShell({ children }) {
               title={passAndPlay ? 'Pass-and-Play ON' : 'Pass-and-Play OFF'}
               className="p-nm-btn w-9 h-9 rounded-full flex items-center justify-center text-base"
               style={passAndPlay ? {
-                background: 'linear-gradient(135deg,#d4a843,#f0c96a)',
-                border: '1px solid rgba(212,168,67,0.8)',
-                boxShadow: '0 0 16px rgba(212,168,67,0.45)',
+                background: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
+                border: '1px solid rgba(245,158,11,0.8)',
+                boxShadow: '0 0 16px rgba(245,158,11,0.45)',
               } : {}}>
               👨‍👩‍👧
             </button>
@@ -128,7 +130,7 @@ export function PortraitHome() {
       <div className="p-nm-glow-wheat rounded-3xl px-5 py-5 text-center">
         <div className="text-5xl mb-3" style={{ display: 'inline-block', animation: 'bounce 2.5s ease-in-out infinite' }}>🚜</div>
         <h1 className="text-xl font-black leading-snug"
-          style={{ background: 'linear-gradient(90deg,#d4a843,#f0c96a,#8bc34a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          style={{ color: '#f59e0b' }}>
           {T('home_h1')}
         </h1>
         <h1 className="text-xl font-black leading-snug" style={{ color: 'var(--p-text-primary)' }}>
@@ -153,6 +155,14 @@ export function PortraitHome() {
         className="p-btn-wheat w-full rounded-full py-3.5 text-sm tracking-wide">
         {T('home_cta')}
       </button>
+      <button type="button"
+        onClick={() => navigate('/setup')}
+        className="p-nm-btn w-full rounded-full py-3 text-sm tracking-wide"
+        style={{ border: '1px solid rgba(16,185,129,0.4)', color: 'var(--p-leaf)' }}>
+        🌱 Set Up My Farm (Personalized)
+      </button>
+
+      <InstallPrompt />
     </motion.div>
   )
 }
@@ -163,7 +173,7 @@ export function PortraitPlay() {
     deck, currentIndex, metrics, inDebtTrap,
     gameOver, gameOverReason, day, seasonPhase,
     bestDaysSurvived, reset, uiLang, ttsEnabled, ttsLang,
-    proposeChoice,
+    proposeChoice, farmerProfile,
   } = useGameStore()
 
   const T    = (k) => t(uiLang, k)
@@ -208,7 +218,7 @@ export function PortraitPlay() {
               <p className="text-xs uppercase tracking-widest font-bold" style={{ color: 'var(--p-text-muted)' }}>{T('play_this_run')}</p>
               <p className="mt-1 font-black text-sm" style={{ color: 'var(--p-text-primary)' }}>S{cur.seasons+1} · D{cur.days}</p>
             </div>
-            <div className="p-nm-inset rounded-2xl px-4 py-3" style={{ border: '1px solid rgba(76,175,80,0.25)' }}>
+            <div className="p-nm-inset rounded-2xl px-4 py-3" style={{ border: '1px solid rgba(16,185,129,0.25)' }}>
               <p className="text-xs uppercase tracking-widest font-bold text-green-600">{T('play_best_run')}</p>
               <p className="mt-1 font-black text-sm text-green-500">S{best.seasons+1} · D{best.days}</p>
             </div>
@@ -225,6 +235,18 @@ export function PortraitPlay() {
   return (
     <motion.div className="relative flex flex-col gap-3 w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <DebtTrapVisualizer active={inDebtTrap} />
+
+      {farmerProfile && (
+        <div className="rounded-xl px-3 py-2 flex items-center gap-2 text-xs"
+          style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
+          <span>👨‍🌾</span>
+          <span style={{ color: 'var(--p-leaf)' }} className="font-bold">{farmerProfile.name}</span>
+          <span style={{ color: 'var(--p-text-muted)' }}>·</span>
+          <span style={{ color: 'var(--p-text-muted)' }}>{farmerProfile.acreage} acres</span>
+          <span style={{ color: 'var(--p-text-muted)' }}>·</span>
+          <span style={{ color: 'var(--p-text-muted)' }}>{farmerProfile.crops.join(', ')}</span>
+        </div>
+      )}
 
       <div className="p-nm-raised rounded-2xl px-4 py-3" style={{ border: '1px solid var(--p-border-wheat)' }}>
         <div className="flex items-center justify-between">
@@ -267,8 +289,7 @@ export function PortraitLearn() {
 
   return (
     <motion.div className="flex flex-col gap-4 w-full" {...fadeUp}>
-      <h2 className="text-lg font-black"
-        style={{ background: 'linear-gradient(90deg,#d4a843,#8bc34a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+      <h2 className="text-lg font-black" style={{ color: '#f59e0b' }}>
         {T('learn_title')}
       </h2>
       <div className="space-y-2">
@@ -306,8 +327,7 @@ export function PortraitLanguages() {
   return (
     <motion.div className="flex flex-col gap-4 w-full" {...fadeUp}>
       <div>
-        <h2 className="text-lg font-black"
-          style={{ background: 'linear-gradient(90deg,#d4a843,#8bc34a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+        <h2 className="text-lg font-black" style={{ color: '#f59e0b' }}>
           Language / भाषा / மொழி
         </h2>
         <p className="mt-1 text-xs" style={{ color: 'var(--p-text-muted)' }}>
@@ -322,7 +342,7 @@ export function PortraitLanguages() {
             <button key={code} type="button"
               onClick={() => { setUiLang(code); setTtsLang(code) }}
               className={`w-full text-left rounded-2xl px-4 py-4 transition-all duration-200 ${active ? 'p-nm-glow-wheat' : 'p-nm-raised p-feature-card'}`}
-              style={{ border: active ? '1px solid rgba(212,168,67,0.5)' : '1px solid var(--p-border-wheat)' }}
+              style={{ border: active ? '1px solid rgba(245,158,11,0.5)' : '1px solid var(--p-border-wheat)' }}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2.5">
@@ -338,7 +358,7 @@ export function PortraitLanguages() {
               </div>
               <p className="text-xs italic leading-snug" style={{ color: 'var(--p-text-secondary)' }}>"{sample}"</p>
               {active && (
-                <div className="mt-2 text-xs font-bold" style={{ color: '#d4a843' }}>✓ Active</div>
+                <div className="mt-2 text-xs font-bold" style={{ color: '#f59e0b' }}>✓ Active</div>
               )}
             </button>
           )

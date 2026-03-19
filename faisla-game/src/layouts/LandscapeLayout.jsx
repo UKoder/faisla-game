@@ -13,6 +13,7 @@ import { NarratorHint } from '../components/NarratorHint'
 import { t } from '../i18n/translations'
 import { speak, stopSpeech } from '../services/tts'
 import { PassAndPlayOverlay } from '../components/PassAndPlayOverlay'
+import { InstallPrompt } from '../components/InstallPrompt'
 
 const fadeUp = {
   initial:    { opacity: 0, y: 16 },
@@ -43,6 +44,7 @@ export function LandscapeShell({ children }) {
     { to: '/',             label: t(uiLang, 'nav_home') },
     { to: '/play',         label: t(uiLang, 'nav_play') },
     { to: '/how-it-works', label: t(uiLang, 'nav_learn') },
+    { to: '/setup',        label: '🌱' },
     { to: '/languages',    label: '🌐' },
   ]
 
@@ -58,7 +60,7 @@ export function LandscapeShell({ children }) {
             <span className="text-xl">🌾</span>
             <div className="flex flex-col leading-none">
               <span className="text-base font-black tracking-[0.2em] uppercase"
-                style={{ background: 'linear-gradient(90deg,#d4a843,#f0c96a,#4caf50)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                style={{ color: '#f59e0b' }}>
                 Faisla
               </span>
               <span className="text-xs tracking-widest uppercase mt-0.5" style={{ color: 'var(--p-text-muted)' }}>
@@ -80,9 +82,9 @@ export function LandscapeShell({ children }) {
               title={passAndPlay ? 'Pass-and-Play ON' : 'Pass-and-Play OFF'}
               className="p-nm-btn w-9 h-9 rounded-full flex items-center justify-center text-base"
               style={passAndPlay ? {
-                background: 'linear-gradient(135deg,#d4a843,#f0c96a)',
-                border: '1px solid rgba(212,168,67,0.8)',
-                boxShadow: '0 0 16px rgba(212,168,67,0.45)',
+                background: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
+                border: '1px solid rgba(245,158,11,0.8)',
+                boxShadow: '0 0 16px rgba(245,158,11,0.45)',
               } : {}}>
               👨‍👩‍👧
             </button>
@@ -125,11 +127,11 @@ export function LandscapeHome() {
         <div className="px-8 py-10 flex items-center gap-12">
           <div className="flex-1">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md mb-5 text-xs font-semibold tracking-widest uppercase"
-              style={{ background: 'rgba(76,175,80,0.1)', border: '1px solid rgba(76,175,80,0.25)', color: 'var(--p-leaf)' }}>
+              style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: 'var(--p-leaf)' }}>
               {T('home_badge')}
             </div>
             <h1 className="text-5xl font-black leading-tight mb-2"
-              style={{ background: 'linear-gradient(90deg,#d4a843,#f0c96a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              style={{ color: '#f59e0b' }}>
               {T('home_h1')}
             </h1>
             <h2 className="text-4xl font-black leading-tight mb-4" style={{ color: 'var(--p-text-primary)' }}>{T('home_h2')}</h2>
@@ -137,6 +139,11 @@ export function LandscapeHome() {
             <button type="button" onClick={() => { startNewRun(); navigate('/play') }}
               className="p-btn-wheat px-9 py-3.5 rounded-full text-sm tracking-wide">
               {T('home_cta')}
+            </button>
+            <button type="button" onClick={() => navigate('/setup')}
+              className="p-nm-btn px-7 py-3 rounded-full text-sm tracking-wide"
+              style={{ border: '1px solid rgba(16,185,129,0.4)', color: 'var(--p-leaf)' }}>
+              🌱 My Farm
             </button>
           </div>
           <div className="shrink-0 text-center">
@@ -193,6 +200,7 @@ export function LandscapeHome() {
           ))}
         </div>
       </div>
+      <InstallPrompt />
     </motion.div>
   )
 }
@@ -204,7 +212,7 @@ export function LandscapePlay() {
     deck, currentIndex, metrics, inDebtTrap,
     gameOver, gameOverReason, day, seasonPhase,
     bestDaysSurvived, reset, uiLang, ttsEnabled, ttsLang,
-    proposeChoice,
+    proposeChoice, farmerProfile,
   } = useGameStore()
 
   const T    = (k) => t(uiLang, k)
@@ -248,7 +256,7 @@ export function LandscapePlay() {
               <p className="text-xs uppercase tracking-widest font-bold mb-1" style={{ color: 'var(--p-text-muted)' }}>{T('play_this_run')}</p>
               <p className="font-bold text-sm" style={{ color: 'var(--p-text-primary)' }}>S{cur.seasons+1} · D{cur.days}</p>
             </div>
-            <div className="p-nm-inset rounded-xl px-4 py-3" style={{ border: '1px solid rgba(76,175,80,0.25)' }}>
+            <div className="p-nm-inset rounded-xl px-4 py-3" style={{ border: '1px solid rgba(16,185,129,0.25)' }}>
               <p className="text-xs uppercase tracking-widest font-bold mb-1 text-green-600">{T('play_best_run')}</p>
               <p className="font-bold text-sm text-green-500">S{best.seasons+1} · D{best.days}</p>
             </div>
@@ -268,6 +276,15 @@ export function LandscapePlay() {
       <DebtTrapVisualizer active={inDebtTrap} />
 
       <div className="w-72 flex flex-col gap-4 shrink-0">
+        {farmerProfile && (
+          <div className="rounded-xl px-3 py-2 flex flex-wrap items-center gap-1.5 text-xs"
+            style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
+            <span>👨‍🌾</span>
+            <span style={{ color: 'var(--p-leaf)' }} className="font-bold">{farmerProfile.name}</span>
+            <span style={{ color: 'var(--p-text-muted)' }}>{farmerProfile.acreage} acres</span>
+            <span style={{ color: 'var(--p-text-muted)' }}>{farmerProfile.crops.join(', ')}</span>
+          </div>
+        )}
         <div className="p-nm-raised rounded-xl px-4 py-4" style={{ border: '1px solid var(--p-border-wheat)' }}>
           <div className="flex items-center justify-between mb-1">
             <span className="font-bold text-sm" style={{ color: 'var(--p-text-primary)' }}>
@@ -309,8 +326,7 @@ export function LandscapeLearn() {
   return (
     <motion.div className="flex flex-col gap-6 w-full" {...fadeUp}>
       <div>
-        <h2 className="text-2xl font-black mb-1"
-          style={{ background: 'linear-gradient(90deg,#d4a843,#8bc34a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+        <h2 className="text-2xl font-black mb-1" style={{ color: '#f59e0b' }}>
           {T('learn_title')}
         </h2>
         <p className="text-sm" style={{ color: 'var(--p-text-muted)' }}>{T('learn_subtitle')}</p>
@@ -327,7 +343,7 @@ export function LandscapeLearn() {
           )
         })}
       </div>
-      <div className="p-nm-raised rounded-xl px-6 py-5" style={{ border: '1px solid rgba(76,175,80,0.2)' }}>
+            <div className="p-nm-raised rounded-xl px-6 py-5" style={{ border: '1px solid rgba(16,185,129,0.2)' }}>
         <h3 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--p-leaf)' }}>
           {T('learn_pillars_title')}
         </h3>
@@ -363,8 +379,7 @@ export function LandscapeLanguages() {
   return (
     <motion.div className="flex flex-col gap-6 w-full max-w-2xl mx-auto" {...fadeUp}>
       <div>
-        <h2 className="text-2xl font-black mb-1"
-          style={{ background: 'linear-gradient(90deg,#d4a843,#8bc34a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+        <h2 className="text-2xl font-black mb-1" style={{ color: '#f59e0b' }}>
           Language / भाषा / மொழி
         </h2>
         <p className="text-sm" style={{ color: 'var(--p-text-muted)' }}>Changes both the UI text and voice language.</p>
@@ -376,7 +391,7 @@ export function LandscapeLanguages() {
             <button key={code} type="button"
               onClick={() => { setUiLang(code); setTtsLang(code) }}
               className={`w-full text-left rounded-2xl px-5 py-5 transition-all duration-200 ${active ? 'p-nm-glow-wheat' : 'p-nm-raised p-feature-card'}`}
-              style={{ border: active ? '1px solid rgba(212,168,67,0.5)' : '1px solid var(--p-border-wheat)' }}>
+              style={{ border: active ? '1px solid rgba(245,158,11,0.5)' : '1px solid var(--p-border-wheat)' }}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2.5">
                   <span className="text-2xl">{icon}</span>
@@ -390,7 +405,7 @@ export function LandscapeLanguages() {
                 </div>
               </div>
               <p className="text-xs italic leading-snug" style={{ color: 'var(--p-text-secondary)' }}>"{sample}"</p>
-              {active && <div className="mt-2 text-xs font-bold" style={{ color: '#d4a843' }}>✓ Active</div>}
+              {active && <div className="mt-2 text-xs font-bold" style={{ color: '#f59e0b' }}>✓ Active</div>}
             </button>
           )
         })}
