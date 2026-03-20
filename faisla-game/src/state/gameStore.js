@@ -12,6 +12,110 @@ const initialMetrics = {
   resilience: 60,
 }
 
+/**
+ * Derive 2-3 autopsy insights from the decision log.
+ * Returns an array of { icon, text } objects.
+ * @param {Array<{tags:string[], direction:string, delta:{family,crops,finance,resilience}}>} log
+ * @param {string} reason  gameOverReason
+ * @param {number} days    total days survived
+ */
+export function deriveAutopsy(log, reason, days) {
+  if (!log || log.length === 0) return []
+
+  const insights = []
+
+  // Count informal-debt choices (left on debt/credit cards)
+  const informalDebt = log.filter(
+    (e) => e.direction === 'left' && (e.tags?.includes('debt') || e.tags?.includes('credit'))
+  ).length
+  if (informalDebt >= 2) {
+    insights.push({
+      icon: '💸',
+      text: `You relied on informal loans ${informalDebt} times. High-interest debt quietly crushed your resilience.`,
+      text_hi: `आपने ${informalDebt} बार अनौपचारिक कर्ज़ लिया। अधिक ब्याज वाले कर्ज़ ने चुपचाप आपका लचीलापन तोड़ दिया।`,
+      text_ta: `நீங்கள் ${informalDebt} முறை அனுபவமற்ற கடன்களை நம்பினீர்கள். அதிக வட்டி கடன் உங்கள் நெகிழ்ச்சியை அமைதியாக நசுக்கியது.`,
+    })
+  }
+
+  // Skipped insurance
+  const skippedInsurance = log.filter(
+    (e) => e.direction === 'left' && e.tags?.includes('insurance')
+  ).length
+  if (skippedInsurance > 0) {
+    insights.push({
+      icon: '🌧️',
+      text: 'You skipped crop insurance. One bad monsoon with no cover can end a season instantly.',
+      text_hi: 'आपने फसल बीमा छोड़ दिया। बिना कवर के एक खराब मानसून तुरंत मौसम खत्म कर सकता है।',
+      text_ta: 'நீங்கள் பயிர் காப்பீட்டை தவிர்த்தீர்கள். காப்பீடு இல்லாமல் ஒரு மோசமான மழை உடனடியாக பருவத்தை முடிக்கும்.',
+    })
+  }
+
+  // Fell for fraud
+  const fraudChoices = log.filter(
+    (e) => e.direction === 'left' && (e.tags?.includes('fraud_call') || e.tags?.includes('fraud'))
+  ).length
+  if (fraudChoices > 0) {
+    insights.push({
+      icon: '⚠️',
+      text: 'You fell for a scam. Real government schemes never ask for OTPs or advance fees over the phone.',
+      text_hi: 'आप एक धोखे में फंस गए। असली सरकारी योजनाएं कभी फोन पर OTP या अग्रिम शुल्क नहीं मांगतीं।',
+      text_ta: 'நீங்கள் ஒரு மோசடியில் சிக்கினீர்கள். உண்மையான அரசு திட்டங்கள் ஒருபோதும் தொலைபேசியில் OTP அல்லது முன்பணம் கேட்காது.',
+    })
+  }
+
+  // Ignored govt schemes
+  const ignoredSchemes = log.filter(
+    (e) => e.direction === 'left' && e.tags?.includes('govt_scheme')
+  ).length
+  if (ignoredSchemes >= 2) {
+    insights.push({
+      icon: '🏛️',
+      text: `You skipped ${ignoredSchemes} government schemes. PM-KISAN, KCC, and PMFBY exist to protect farmers — use them.`,
+      text_hi: `आपने ${ignoredSchemes} सरकारी योजनाएं छोड़ दीं। PM-KISAN, KCC और PMFBY किसानों की रक्षा के लिए हैं — इनका उपयोग करें।`,
+      text_ta: `நீங்கள் ${ignoredSchemes} அரசு திட்டங்களை தவிர்த்தீர்கள். PM-KISAN, KCC மற்றும் PMFBY விவசாயிகளை பாதுகாக்க உள்ளன — அவற்றை பயன்படுத்துங்கள்.`,
+    })
+  }
+
+  // Good savings habit
+  const goodSavings = log.filter(
+    (e) => e.direction === 'right' && (e.tags?.includes('savings') || e.tags?.includes('formal_credit'))
+  ).length
+  if (goodSavings >= 2 && reason === 'year_complete') {
+    insights.push({
+      icon: '✅',
+      text: `You made ${goodSavings} smart savings decisions. That discipline is what separates surviving farmers from thriving ones.`,
+      text_hi: `आपने ${goodSavings} स्मार्ट बचत निर्णय लिए। यही अनुशासन जीवित रहने वाले किसानों को फलने-फूलने वाले किसानों से अलग करता है।`,
+      text_ta: `நீங்கள் ${goodSavings} சிறந்த சேமிப்பு முடிவுகள் எடுத்தீர்கள். அந்த ஒழுக்கமே உயிர்வாழும் விவசாயிகளை செழிக்கும் விவசாயிகளிடமிருந்து பிரிக்கிறது.`,
+    })
+  }
+
+  // Festival overspend
+  const festivalSpend = log.filter(
+    (e) => e.direction === 'left' && e.tags?.includes('consumption')
+  ).length
+  if (festivalSpend > 0) {
+    insights.push({
+      icon: '🎉',
+      text: "Festival spending drained your buffer. Celebrating simply keeps next season's seeds funded.",
+      text_hi: 'त्योहार के खर्च ने आपका बफर खाली कर दिया। सादगी से मनाने से अगले सीज़न के बीज का पैसा बचता है।',
+      text_ta: 'திருவிழா செலவு உங்கள் இருப்பை வடிகட்டியது. எளிமையாக கொண்டாடுவது அடுத்த பருவத்தின் விதை நிதியை பாதுகாக்கும்.',
+    })
+  }
+
+  // Fallback if nothing specific triggered
+  if (insights.length === 0) {
+    const seasons = Math.floor(days / 365)
+    insights.push({
+      icon: '📋',
+      text: `You survived ${seasons} season${seasons !== 1 ? 's' : ''}. Every decision you made was a lesson in real farm economics.`,
+      text_hi: `आप ${seasons} मौसम${seasons !== 1 ? 'ों' : ''} तक टिके रहे। आपका हर फैसला असली खेती अर्थशास्त्र का एक सबक था।`,
+      text_ta: `நீங்கள் ${seasons} பருவம் தப்பிப்பிழைத்தீர்கள். நீங்கள் எடுத்த ஒவ்வொரு முடிவும் உண்மையான விவசாய பொருளாதாரத்தில் ஒரு பாடம்.`,
+    })
+  }
+
+  return insights.slice(0, 3)
+}
+
 function inferSeasonPhase(day) {
   const dayInYear = day % 365
   if (dayInYear <= 90) return 'pre_sowing'
@@ -40,6 +144,10 @@ export const useGameStore = create((set, get) => ({
   choiceRejected: false,
   /** @type {{ name: string, crops: string[], acreage: number } | null} */
   farmerProfile: null,
+  /** @type {Array<{tags:string[], direction:string, delta:object}>} */
+  decisionLog: [],
+  /** @type {Array<{icon:string, text:string, text_hi:string, text_ta:string}>} */
+  autopsy: [],
 
   toggleTts() {
     set((s) => ({ ttsEnabled: !s.ttsEnabled }))
@@ -71,6 +179,8 @@ export const useGameStore = create((set, get) => ({
       gameOver: false,
       gameOverReason: null,
       bestDaysSurvived: get().bestDaysSurvived ?? 0,
+      decisionLog: [],
+      autopsy: [],
     })
     try { localStorage.setItem('faisla_farmerProfile', JSON.stringify(profile)) } catch {}
   },
@@ -123,8 +233,9 @@ export const useGameStore = create((set, get) => ({
       inDebtTrap: false,
       gameOver: false,
       gameOverReason: null,
-      // keep bestDaysSurvived from previous runs
       bestDaysSurvived: get().bestDaysSurvived ?? 0,
+      decisionLog: [],
+      autopsy: [],
     })
   },
 
@@ -192,6 +303,12 @@ export const useGameStore = create((set, get) => ({
       vibrateSuccess()
     }
 
+    // Append to decision log for end-of-run autopsy
+    const newLog = [
+      ...state.decisionLog,
+      { tags: card.tags ?? [], direction, delta },
+    ]
+
     const newMetrics = applyPillarEffects(state.metrics, delta)
     const evaluation = evaluateGameState(newMetrics, card)
 
@@ -212,6 +329,10 @@ export const useGameStore = create((set, get) => ({
       seasonPhase: inferSeasonPhase(newDay),
       bestDaysSurvived: state.bestDaysSurvived,
       pendingChoice: null,
+      decisionLog: newLog,
+      autopsy: evaluation.gameOver
+        ? deriveAutopsy(newLog, evaluation.reason ?? 'pillar_collapse', newDay)
+        : state.autopsy,
     }
 
     if (nextState.gameOver) {
@@ -236,6 +357,8 @@ export const useGameStore = create((set, get) => ({
       gameOver: false,
       gameOverReason: null,
       bestDaysSurvived: get().bestDaysSurvived ?? 0,
+      decisionLog: [],
+      autopsy: [],
     })
   },
 }))

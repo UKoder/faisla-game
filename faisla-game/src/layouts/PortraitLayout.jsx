@@ -1,8 +1,8 @@
 /**
- * Portrait layout — warm neumorphic soil/wheat theme.
+ * Portrait layout — flat, high-contrast, outdoor-ready.
  * Single-column, max-w-md, designed for mobile portrait.
  */
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { useGameStore } from '../state/gameStore'
@@ -14,6 +14,7 @@ import { t } from '../i18n/translations'
 import { speak, stopSpeech } from '../services/tts'
 import { PassAndPlayOverlay } from '../components/PassAndPlayOverlay'
 import { InstallPrompt } from '../components/InstallPrompt'
+import { AutopsyReport } from '../components/AutopsyReport'
 
 const fadeUp = {
   initial:    { opacity: 0, y: 18 },
@@ -41,58 +42,51 @@ export function PortraitShell({ children }) {
     { to: '/',             label: t(uiLang, 'nav_home') },
     { to: '/play',         label: t(uiLang, 'nav_play') },
     { to: '/how-it-works', label: t(uiLang, 'nav_learn') },
-    { to: '/setup',        label: '🌱' },
     { to: '/languages',    label: '🌐' },
   ]
 
   return (
-    <div data-theme={lightMode ? 'light' : 'dark'} className="portrait-shell p-bg-field">
-      <div className="p-orb p-orb-1" />
-      <div className="p-orb p-orb-2" />
-      <div className="p-orb p-orb-3" />
+    <div data-theme={lightMode ? 'light' : 'dark'} className="portrait-shell">
+      <div className="w-full max-w-md px-4 py-4 flex flex-col gap-4">
 
-      <div className="relative z-10 w-full max-w-md px-4 py-4 flex flex-col gap-4">
-        <header className="p-nm-card rounded-3xl px-5 py-3.5 flex items-center justify-between">
+        {/* Header */}
+        <header className="f-card rounded-xl px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🌾</span>
             <div className="flex flex-col leading-none">
               <span className="text-base font-black tracking-[0.2em] uppercase"
-                style={{ color: '#f59e0b' }}>
+                style={{ color: 'var(--wheat)' }}>
                 Faisla
               </span>
-              <span className="text-xs tracking-widest uppercase mt-0.5" style={{ color: 'var(--p-text-muted)' }}>
+              <span className="text-xs tracking-widest uppercase mt-0.5" style={{ color: 'var(--text-muted)' }}>
                 Farmer decision game
               </span>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button type="button" onClick={toggleLightMode}
-              className="p-nm-btn w-9 h-9 rounded-full flex items-center justify-center text-base">
+              className="btn-icon w-9 h-9 rounded-sm flex items-center justify-center text-base">
               {lightMode ? '🌙' : '☀️'}
             </button>
             <button type="button" onClick={toggleTts}
-              className="p-nm-btn w-9 h-9 rounded-full flex items-center justify-center text-base">
+              className="btn-icon w-9 h-9 rounded-sm flex items-center justify-center text-base">
               {ttsEnabled ? '🔊' : '🔇'}
             </button>
             <button type="button" onClick={togglePassAndPlay}
               title={passAndPlay ? 'Pass-and-Play ON' : 'Pass-and-Play OFF'}
-              className="p-nm-btn w-9 h-9 rounded-full flex items-center justify-center text-base"
-              style={passAndPlay ? {
-                background: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
-                border: '1px solid rgba(245,158,11,0.8)',
-                boxShadow: '0 0 16px rgba(245,158,11,0.45)',
-              } : {}}>
+              className={`w-9 h-9 rounded-sm flex items-center justify-center text-base ${passAndPlay ? 'btn-icon-active' : 'btn-icon'}`}>
               👨‍👩‍👧
             </button>
           </div>
         </header>
 
-        <nav className="p-nm-card rounded-2xl px-3 py-2 flex gap-2 justify-center">
+        {/* Nav */}
+        <nav className="f-card rounded-xl px-3 py-2 flex gap-2 justify-center">
           {navLinks.map(({ to, label }) => (
             <NavLink key={to} to={to}
               className={({ isActive }) =>
-                `nav-pill flex-1 text-center px-2 py-1.5 rounded-xl text-xs font-bold tracking-wide ${
-                  isActive ? 'p-btn-wheat' : 'p-nm-btn'
+                `nav-pill flex-1 text-center px-2 py-1.5 rounded-sm text-xs font-bold tracking-wide ${
+                  isActive ? 'nav-pill-active' : ''
                 }`
               }
             >
@@ -101,7 +95,8 @@ export function PortraitShell({ children }) {
           ))}
         </nav>
 
-        <main className="flex-1 p-nm-card rounded-3xl px-5 py-5 flex justify-center">
+        {/* Main */}
+        <main className="flex-1 f-card rounded-xl px-4 py-4 flex justify-center">
           <AnimatePresence mode="wait">
             {children}
           </AnimatePresence>
@@ -127,39 +122,31 @@ export function PortraitHome() {
 
   return (
     <motion.div className="flex flex-col gap-4 w-full" {...fadeUp}>
-      <div className="p-nm-glow-wheat rounded-3xl px-5 py-5 text-center">
+      <div className="f-card-wheat rounded-xl px-5 py-5 text-center">
         <div className="text-5xl mb-3" style={{ display: 'inline-block', animation: 'bounce 2.5s ease-in-out infinite' }}>🚜</div>
-        <h1 className="text-xl font-black leading-snug"
-          style={{ color: '#f59e0b' }}>
+        <h1 className="text-xl font-black leading-snug" style={{ color: 'var(--wheat)' }}>
           {T('home_h1')}
         </h1>
-        <h1 className="text-xl font-black leading-snug" style={{ color: 'var(--p-text-primary)' }}>
+        <h1 className="text-xl font-black leading-snug" style={{ color: 'var(--text)' }}>
           {T('home_h2')}
         </h1>
-        <p className="mt-2 text-xs leading-relaxed" style={{ color: 'var(--p-text-muted)' }}>{T('home_desc')}</p>
+        <p className="mt-2 text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{T('home_desc')}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         {features.map(({ icon, titleKey, descKey }) => (
-          <div key={titleKey} className="p-feature-card p-nm-raised rounded-2xl px-4 py-4"
-            style={{ border: '1px solid var(--p-border-wheat)' }}>
+          <div key={titleKey} className="f-raised rounded-xl px-4 py-4">
             <div className="text-2xl mb-2">{icon}</div>
-            <p className="text-sm font-bold" style={{ color: 'var(--p-text-primary)' }}>{T(titleKey)}</p>
-            <p className="mt-1 text-xs leading-snug" style={{ color: 'var(--p-text-muted)' }}>{T(descKey)}</p>
+            <p className="text-sm font-black" style={{ color: 'var(--text)' }}>{T(titleKey)}</p>
+            <p className="mt-1 text-xs leading-snug" style={{ color: 'var(--text-muted)' }}>{T(descKey)}</p>
           </div>
         ))}
       </div>
 
       <button type="button"
         onClick={() => { startNewRun(); navigate('/play') }}
-        className="p-btn-wheat w-full rounded-full py-3.5 text-sm tracking-wide">
+        className="btn-primary w-full rounded-sm py-3.5 text-sm tracking-wide">
         {T('home_cta')}
-      </button>
-      <button type="button"
-        onClick={() => navigate('/setup')}
-        className="p-nm-btn w-full rounded-full py-3 text-sm tracking-wide"
-        style={{ border: '1px solid rgba(16,185,129,0.4)', color: 'var(--p-leaf)' }}>
-        🌱 Set Up My Farm (Personalized)
       </button>
 
       <InstallPrompt />
@@ -173,8 +160,10 @@ export function PortraitPlay() {
     deck, currentIndex, metrics, inDebtTrap,
     gameOver, gameOverReason, day, seasonPhase,
     bestDaysSurvived, reset, uiLang, ttsEnabled, ttsLang,
-    proposeChoice, farmerProfile,
+    proposeChoice,
   } = useGameStore()
+
+  const [pendingDelta, setPendingDelta] = useState(null)
 
   const T    = (k) => t(uiLang, k)
   const card = deck[currentIndex]
@@ -189,7 +178,6 @@ export function PortraitPlay() {
     return c.prompt ?? ''
   }
 
-  // Speak card prompt instantly on each new card
   useEffect(() => {
     if (!ttsEnabled || !card) return
     speak(getPrompt(card), { lang: ttsLang ?? uiLang })
@@ -197,7 +185,6 @@ export function PortraitPlay() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [card?.id, ttsEnabled, ttsLang, uiLang])
 
-  // Stop speech immediately when game ends
   useEffect(() => {
     if (gameOver) stopSpeech()
   }, [gameOver])
@@ -205,27 +192,28 @@ export function PortraitPlay() {
   if (gameOver) {
     return (
       <motion.div className="flex flex-col gap-4 w-full" {...fadeUp}>
-        <div className={`rounded-3xl px-5 py-5 text-center ${isWin ? 'p-nm-glow-green' : 'p-nm-glow-red'}`}>
+        <div className={`rounded-xl px-5 py-5 text-center ${isWin ? 'f-card-green' : 'f-card-red'}`}>
           <div className="text-5xl mb-2">{lossIcon(gameOverReason)}</div>
-          <h2 className={`text-lg font-black ${isWin ? 'text-green-500' : 'text-red-500'}`}>
+          <h2 className="text-lg font-black" style={{ color: isWin ? 'var(--green-light)' : 'var(--red)' }}>
             {isWin ? T('play_season_complete') : T('play_game_over')}
           </h2>
-          <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--p-text-secondary)' }}>
+          <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--text-sub)' }}>
             {T(lossReasonKey(gameOverReason))}
           </p>
           <div className="mt-4 grid grid-cols-2 gap-3 text-left">
-            <div className="p-nm-inset rounded-2xl px-4 py-3">
-              <p className="text-xs uppercase tracking-widest font-bold" style={{ color: 'var(--p-text-muted)' }}>{T('play_this_run')}</p>
-              <p className="mt-1 font-black text-sm" style={{ color: 'var(--p-text-primary)' }}>S{cur.seasons+1} · D{cur.days}</p>
+            <div className="f-inset rounded-xl px-4 py-3">
+              <p className="text-xs uppercase tracking-widest font-black" style={{ color: 'var(--text-muted)' }}>{T('play_this_run')}</p>
+              <p className="mt-1 font-black text-sm" style={{ color: 'var(--text)' }}>S{cur.seasons+1} · D{cur.days}</p>
             </div>
-            <div className="p-nm-inset rounded-2xl px-4 py-3" style={{ border: '1px solid rgba(16,185,129,0.25)' }}>
-              <p className="text-xs uppercase tracking-widest font-bold text-green-600">{T('play_best_run')}</p>
-              <p className="mt-1 font-black text-sm text-green-500">S{best.seasons+1} · D{best.days}</p>
+            <div className="f-inset rounded-xl px-4 py-3" style={{ borderColor: 'var(--green)' }}>
+              <p className="text-xs uppercase tracking-widest font-black" style={{ color: 'var(--green)' }}>{T('play_best_run')}</p>
+              <p className="mt-1 font-black text-sm" style={{ color: 'var(--green-light)' }}>S{best.seasons+1} · D{best.days}</p>
             </div>
           </div>
         </div>
         <PillarsBar metrics={metrics} />
-        <button type="button" className="p-btn-wheat w-full rounded-full py-3.5 text-sm" onClick={reset}>
+        <AutopsyReport uiLang={uiLang} />
+        <button type="button" className="btn-primary w-full rounded-sm py-3.5 text-sm" onClick={reset}>
           {T('play_try_again')}
         </button>
       </motion.div>
@@ -236,42 +224,36 @@ export function PortraitPlay() {
     <motion.div className="relative flex flex-col gap-3 w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <DebtTrapVisualizer active={inDebtTrap} />
 
-      {farmerProfile && (
-        <div className="rounded-xl px-3 py-2 flex items-center gap-2 text-xs"
-          style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
-          <span>👨‍🌾</span>
-          <span style={{ color: 'var(--p-leaf)' }} className="font-bold">{farmerProfile.name}</span>
-          <span style={{ color: 'var(--p-text-muted)' }}>·</span>
-          <span style={{ color: 'var(--p-text-muted)' }}>{farmerProfile.acreage} acres</span>
-          <span style={{ color: 'var(--p-text-muted)' }}>·</span>
-          <span style={{ color: 'var(--p-text-muted)' }}>{farmerProfile.crops.join(', ')}</span>
-        </div>
-      )}
-
-      <div className="p-nm-raised rounded-2xl px-4 py-3" style={{ border: '1px solid var(--p-border-wheat)' }}>
+      <div className="f-raised rounded-xl px-4 py-3" style={{ borderColor: 'var(--border-wheat)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-lg">🌤️</span>
             <div>
-              <span className="text-sm font-black" style={{ color: 'var(--p-text-primary)' }}>
+              <span className="text-sm font-black" style={{ color: 'var(--text)' }}>
                 {T('play_season')} {cur.seasons+1}
               </span>
-              <span className="text-xs ml-2" style={{ color: 'var(--p-text-muted)' }}>
+              <span className="text-xs ml-2" style={{ color: 'var(--text-muted)' }}>
                 {T('play_day')} {cur.days}
               </span>
             </div>
           </div>
-          <span className={`text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full p-phase-${seasonPhase}`}>
+          <span className={`text-xs font-black uppercase tracking-widest px-3 py-1 rounded-sm phase-${seasonPhase}`}>
             {T(`phase_${seasonPhase}`)}
           </span>
         </div>
-        <p className="mt-1.5 text-xs" style={{ color: 'var(--p-text-muted)' }}>{T('play_balance')}</p>
+        <p className="mt-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>{T('play_balance')}</p>
       </div>
 
-      <PillarsBar metrics={metrics} />
-      <DecisionCard card={card} onChoice={proposeChoice} localizedPrompt={getPrompt(card)} uiLang={uiLang} />
+      <PillarsBar metrics={metrics} pendingDelta={pendingDelta} />
+      <DecisionCard
+        card={card}
+        onChoice={proposeChoice}
+        localizedPrompt={getPrompt(card)}
+        uiLang={uiLang}
+        onDeltaChange={setPendingDelta}
+      />
 
-      <div className="flex items-center justify-between text-xs px-1" style={{ color: 'var(--p-text-muted)' }}>
+      <div className="flex items-center justify-between text-xs px-1" style={{ color: 'var(--text-muted)' }}>
         <span>🏆 {T('play_best')}: S{best.seasons+1} · D{best.days}</span>
         <span>{currentIndex+1} / {deck.length}</span>
       </div>
@@ -289,7 +271,7 @@ export function PortraitLearn() {
 
   return (
     <motion.div className="flex flex-col gap-4 w-full" {...fadeUp}>
-      <h2 className="text-lg font-black" style={{ color: '#f59e0b' }}>
+      <h2 className="text-lg font-black" style={{ color: 'var(--wheat)' }}>
         {T('learn_title')}
       </h2>
       <div className="space-y-2">
@@ -297,14 +279,13 @@ export function PortraitLearn() {
           const icons = ['👨‍🌾','🃏','⚖️','📉','📴','🏛️']
           return (
             <motion.div key={key}
-              className="p-feature-card p-nm-raised flex items-start gap-3 rounded-2xl px-3 py-3"
-              style={{ border: '1px solid var(--p-border-wheat)' }}
+              className="f-raised flex items-start gap-3 rounded-xl px-3 py-3"
               initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.07, duration: 0.3 }}
             >
               <span className="text-xl shrink-0">{icons[i]}</span>
-              <p className="text-xs leading-relaxed" style={{ color: 'var(--p-text-secondary)' }}>{T(key)}</p>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-sub)' }}>{T(key)}</p>
             </motion.div>
           )
         })}
@@ -327,10 +308,10 @@ export function PortraitLanguages() {
   return (
     <motion.div className="flex flex-col gap-4 w-full" {...fadeUp}>
       <div>
-        <h2 className="text-lg font-black" style={{ color: '#f59e0b' }}>
+        <h2 className="text-lg font-black" style={{ color: 'var(--wheat)' }}>
           Language / भाषा / மொழி
         </h2>
-        <p className="mt-1 text-xs" style={{ color: 'var(--p-text-muted)' }}>
+        <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
           Changes both the UI text and voice language.
         </p>
       </div>
@@ -341,24 +322,24 @@ export function PortraitLanguages() {
           return (
             <button key={code} type="button"
               onClick={() => { setUiLang(code); setTtsLang(code) }}
-              className={`w-full text-left rounded-2xl px-4 py-4 transition-all duration-200 ${active ? 'p-nm-glow-wheat' : 'p-nm-raised p-feature-card'}`}
-              style={{ border: active ? '1px solid rgba(245,158,11,0.5)' : '1px solid var(--p-border-wheat)' }}
+              className={`w-full text-left rounded-xl px-4 py-4 ${active ? 'f-card-wheat' : 'f-raised'}`}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2.5">
                   <span className="text-2xl">{icon}</span>
                   <div>
-                    <span className="text-sm font-black" style={{ color: 'var(--p-text-primary)' }}>{name}</span>
-                    <span className="ml-2 text-xs font-bold" style={{ color: 'var(--p-text-muted)' }}>{native}</span>
+                    <span className="text-sm font-black" style={{ color: 'var(--text)' }}>{name}</span>
+                    <span className="ml-2 text-xs font-bold" style={{ color: 'var(--text-muted)' }}>{native}</span>
                   </div>
                 </div>
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${active ? 'border-yellow-400' : 'border-gray-500'}`}>
-                  {active && <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />}
+                <div className="w-5 h-5 rounded-sm border-2 flex items-center justify-center shrink-0"
+                  style={{ borderColor: active ? 'var(--wheat)' : 'var(--border)' }}>
+                  {active && <div className="w-2.5 h-2.5 rounded-sm" style={{ background: 'var(--wheat)' }} />}
                 </div>
               </div>
-              <p className="text-xs italic leading-snug" style={{ color: 'var(--p-text-secondary)' }}>"{sample}"</p>
+              <p className="text-xs italic leading-snug" style={{ color: 'var(--text-sub)' }}>"{sample}"</p>
               {active && (
-                <div className="mt-2 text-xs font-bold" style={{ color: '#f59e0b' }}>✓ Active</div>
+                <div className="mt-2 text-xs font-black" style={{ color: 'var(--wheat)' }}>✓ Active</div>
               )}
             </button>
           )

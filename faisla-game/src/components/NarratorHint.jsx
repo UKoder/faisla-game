@@ -5,20 +5,27 @@ import { useGameStore } from '../state/gameStore'
 const narratorMeta = {
   elder: {
     label: 'Wise Elder', tone: 'Shares long-term wisdom from experience.',
-    icon: '🧓', cssClass: 'p-narrator-elder', color: 'var(--p-wheat)',
+    icon: '🧓', cssClass: 'narrator-elder',
   },
   bank_mitr: {
     label: 'Bank Mitr', tone: 'Explains formal schemes and safe options.',
-    icon: '🏦', cssClass: 'p-narrator-bank_mitr', color: 'var(--p-leaf)',
+    icon: '🏦', cssClass: 'narrator-bank_mitr',
   },
   scammer: {
     label: 'Scammer', tone: 'Sounds helpful, but is dangerous.',
-    icon: '⚠️', cssClass: 'p-narrator-scammer', color: '#ef4444',
+    icon: '⚠️', cssClass: 'narrator-scammer',
   },
   self: {
     label: 'Your Inner Voice', tone: 'Reminds you of your own experience.',
-    icon: '💭', cssClass: 'p-narrator-self', color: 'var(--p-sky)',
+    icon: '💭', cssClass: 'narrator-self',
   },
+}
+
+const narratorColor = {
+  elder:     'var(--wheat)',
+  bank_mitr: 'var(--green)',
+  scammer:   'var(--red)',
+  self:      'var(--blue)',
 }
 
 function getLocalizedPrompt(card, lang) {
@@ -29,7 +36,10 @@ function getLocalizedPrompt(card, lang) {
 }
 
 export function NarratorHint({ card }) {
-  const meta       = narratorMeta[card?.narrator] ?? narratorMeta.self
+  const narratorKey = card?.narrator ?? 'self'
+  const meta        = narratorMeta[narratorKey] ?? narratorMeta.self
+  const color       = narratorColor[narratorKey] ?? 'var(--blue)'
+
   const ttsEnabled = useGameStore((s) => s.ttsEnabled)
   const ttsLang    = useGameStore((s) => s.ttsLang)
   const toggleTts  = useGameStore((s) => s.toggleTts)
@@ -49,14 +59,12 @@ export function NarratorHint({ card }) {
 
   useEffect(() => {
     stopSpeech()
-    const id = setTimeout(() => setPlaying(false), 0)
-    return () => clearTimeout(id)
+    setTimeout(() => setPlaying(false), 0)
   }, [card?.id])
 
   useEffect(() => {
     stopSpeech()
-    const id = setTimeout(() => setPlaying(false), 0)
-    return () => clearTimeout(id)
+    setTimeout(() => setPlaying(false), 0)
   }, [ttsLang])
 
   function handlePlay() {
@@ -70,19 +78,19 @@ export function NarratorHint({ card }) {
     setTimeout(() => setPlaying(false), ms + 1000)
   }
 
-  const langPrefix = ttsLang.split('-')[0]
+  const langPrefix = ttsLang?.split('-')[0]
   const hasAnyVoice = voices.some((v) => v.toLowerCase().includes(langPrefix))
   const noVoiceWarning = ttsEnabled && ttsLang !== 'en-IN' && voices.length > 0 && !hasAnyVoice
 
   return (
-    <div className={`rounded-xl border px-3 py-3 ${meta.cssClass}`}>
+    <div className={`f-inset rounded-xl border-2 px-3 py-3 ${meta.cssClass}`}>
       <div className="flex items-center gap-2.5 mb-2">
         <span className="text-lg shrink-0">{meta.icon}</span>
         <div className="flex-1 min-w-0">
-          <div className="text-xs font-bold uppercase tracking-widest" style={{ color: meta.color }}>
+          <div className="text-xs font-black uppercase tracking-widest" style={{ color }}>
             {meta.label}
           </div>
-          <div className="text-xs" style={{ color: 'var(--p-text-muted)' }}>{meta.tone}</div>
+          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{meta.tone}</div>
         </div>
       </div>
 
@@ -90,31 +98,21 @@ export function NarratorHint({ card }) {
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 flex-wrap">
             <button type="button" onClick={toggleTts}
-              className="text-xs px-2.5 py-1 rounded transition"
-              style={{
-                background: ttsEnabled ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.04)',
-                border: ttsEnabled ? '1px solid rgba(16,185,129,0.3)' : '1px solid var(--p-border-wheat)',
-                color: ttsEnabled ? 'var(--p-leaf)' : 'var(--p-text-muted)',
-              }}>
+              className={`text-xs px-2.5 py-1 rounded ${ttsEnabled ? 'btn-primary' : 'btn-ghost'}`}>
               {ttsEnabled ? '🔊 On' : '🔇 Off'}
             </button>
 
             {ttsEnabled && card && (
               <button type="button" onClick={handlePlay}
-                className="text-xs px-2.5 py-1 rounded transition"
-                style={{
-                  background: playing ? 'rgba(192,80,58,0.12)' : 'rgba(255,255,255,0.04)',
-                  border: playing ? '1px solid rgba(192,80,58,0.3)' : '1px solid var(--p-border-wheat)',
-                  color: playing ? '#ef4444' : 'var(--p-text-muted)',
-                }}>
+                className={`text-xs px-2.5 py-1 rounded ${playing ? 'btn-danger' : 'btn-ghost'}`}>
                 {playing ? '⏹ Stop' : '▶ Read'}
               </button>
             )}
           </div>
 
           {noVoiceWarning && (
-            <div className="text-xs leading-snug px-2 py-1.5 rounded"
-              style={{ background: 'rgba(201,145,58,0.1)', border: '1px solid rgba(201,145,58,0.3)', color: 'var(--p-wheat)' }}>
+            <div className="text-xs leading-snug px-2 py-1.5 rounded f-inset"
+              style={{ borderColor: 'var(--wheat)', color: 'var(--wheat)' }}>
               No {ttsLang === 'hi-IN' ? 'Hindi' : 'Tamil'} voice found on this device.
             </div>
           )}
@@ -122,7 +120,7 @@ export function NarratorHint({ card }) {
       )}
 
       {!supported && (
-        <p className="text-xs mt-1" style={{ color: 'var(--p-text-muted)' }}>Voice not supported in this browser.</p>
+        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Voice not supported in this browser.</p>
       )}
     </div>
   )

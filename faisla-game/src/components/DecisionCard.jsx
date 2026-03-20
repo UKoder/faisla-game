@@ -1,10 +1,14 @@
-import { useEffect } from 'react'
+/**
+ * DecisionCard — flat design, SVG swipe indicators, live pillar delta preview.
+ * As the user drags, the PillarsBar shows which pillars will be hit.
+ */
+import { useEffect, useState } from 'react'
 import { useAnimation, useMotionValue, useTransform } from 'framer-motion'
 import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { t } from '../i18n/translations'
 import { useGameStore } from '../state/gameStore'
 
-const swipeThreshold = 80
+const SWIPE_THRESHOLD = 80
 
 function cardField(card, field, uiLang) {
   if (!card) return ''
@@ -13,57 +17,78 @@ function cardField(card, field, uiLang) {
   return card[field] ?? ''
 }
 
-export function DecisionCard({ card, onChoice, localizedPrompt, uiLang = 'en-IN' }) {
+export function DecisionCard({ card, onChoice, localizedPrompt, uiLang = 'en-IN', onDeltaChange }) {
   const choiceRejected = useGameStore((s) => s.choiceRejected)
   const controls       = useAnimation()
   const x              = useMotionValue(0)
-  const rotate         = useTransform(x, [-200, 200], [-10, 10])
-  const leftOpacity    = useTransform(x, [-160, -30, 0], [1, 0.5, 0])
-  const rightOpacity   = useTransform(x, [0, 30, 160], [0, 0.5, 1])
-  const cardScale      = useTransform(x, [-200, 0, 200], [0.96, 1, 0.96])
-  const leftChoiceOpacity  = useTransform(x, [-160, 0], [1, 0.65])
-  const rightChoiceOpacity = useTransform(x, [0, 160], [0.65, 1])
+  const rotate         = useTransform(x, [-200, 200], [-8, 8])
+  const cardScale      = useTransform(x, [-200, 0, 200], [0.97, 1, 0.97])
 
-  // Reset card position when a new card arrives
+  // Opacity of left/right swipe indicators
+  const leftOpacity  = useTransform(x, [-160, -40, 0], [1, 0.4, 0])
+  const rightOpacity = useTransform(x, [0, 40, 160], [0, 0.4, 1])
+
+  // Track drag direction to show live delta preview
+  const [dragDir, setDragDir] = useState(null) // 'left' | 'right' | null
+
+  useEffect(() => {
+    const unsub = x.on('change', (v) => {
+      if (v < -30) {
+        setDragDir('left')
+        onDeltaChange?.(card?.effectsLeft ?? null)
+      } else if (v > 30) {
+        setDragDir('right')
+        onDeltaChange?.(card?.effectsRight ?? null)
+      } else {
+        setDragDir(null)
+        onDeltaChange?.(null)
+      }
+    })
+    return unsub
+  }, [x, card, onDeltaChange])
+
+  // Reset on new card
   useEffect(() => {
     controls.set({ x: 0, opacity: 1, rotate: 0, scale: 1 })
     x.set(0)
-  }, [card?.id, controls, x])
+    setDragDir(null)
+    onDeltaChange?.(null)
+  }, [card?.id, controls, x, onDeltaChange])
 
-  // Animate card back in smoothly when P2 rejects
+  // Spring back on P2 reject
   useEffect(() => {
     if (!choiceRejected) return
-    // Card is off-screen (flew left or right) — snap it back with a spring
     controls.start({
-      x: 0,
-      opacity: 1,
-      rotate: 0,
-      scale: 1,
-      transition: { type: 'spring', stiffness: 220, damping: 22, duration: 0.5 },
+      x: 0, opacity: 1, rotate: 0, scale: 1,
+      transition: { type: 'spring', stiffness: 220, damping: 22 },
     })
     x.set(0)
-  }, [choiceRejected, controls, x])
+    setDragDir(null)
+    onDeltaChange?.(null)
+  }, [choiceRejected, controls, x, onDeltaChange])
 
   const T = (key) => t(uiLang, key)
 
   if (!card) {
     return (
       <div className="flex-1 flex items-center justify-center text-sm py-8"
-        style={{ color: 'var(--p-text-muted)' }}>
+        style={{ color: 'var(--text-muted)' }}>
         🌱 Season complete...
       </div>
     )
   }
 
   const handleDragEnd = async (_, info) => {
-    if (info.offset.x < -swipeThreshold) {
-      await controls.start({ x: -340, opacity: 0, rotate: -14, transition: { duration: 0.28 } })
+    onDeltaChange?.(null)
+    setDragDir(null)
+    if (info.offset.x < -SWIPE_THRESHOLD) {
+      await controls.start({ x: -360, opacity: 0, rotate: -12, transition: { duration: 0.25 } })
       onChoice?.('left')
-    } else if (info.offset.x > swipeThreshold) {
-      await controls.start({ x: 340, opacity: 0, rotate: 14, transition: { duration: 0.28 } })
+    } else if (info.offset.x > SWIPE_THRESHOLD) {
+      await controls.start({ x: 360, opacity: 0, rotate: 12, transition: { duration: 0.25 } })
       onChoice?.('right')
     } else {
-      controls.start({ x: 0, rotate: 0, transition: { type: 'spring', stiffness: 320, damping: 22 } })
+      controls.start({ x: 0, rotate: 0, transition: { type: 'spring', stiffness: 320, damping: 24 } })
     }
   }
 
@@ -78,82 +103,100 @@ export function DecisionCard({ card, onChoice, localizedPrompt, uiLang = 'en-IN'
 
   return (
     <div className="relative flex-1 flex items-center justify-center my-2">
-      {/* Left indicator */}
+
+      {/* ── Left swipe indicator — flat red block ── */}
       <motion.div
-        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 pointer-events-none flex flex-col items-center gap-1.5"
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 pointer-events-none flex flex-col items-center gap-1"
         style={{ opacity: leftOpacity }}
       >
-        <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg"
-          style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.5)' }}>←</div>
-        <span className="text-xs text-red-400 font-black uppercase tracking-widest">{leftWord}</span>
+        <div className="w-12 h-12 flex items-center justify-center rounded-sm text-xl font-black"
+          style={{ background: 'var(--red)', color: '#ffffff' }}>✕</div>
+        <span className="text-xs font-black uppercase" style={{ color: 'var(--red)' }}>{leftWord}</span>
       </motion.div>
 
-      {/* Right indicator */}
+      {/* ── Right swipe indicator — flat green block ── */}
       <motion.div
-        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 pointer-events-none flex flex-col items-center gap-1.5"
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 pointer-events-none flex flex-col items-center gap-1"
         style={{ opacity: rightOpacity }}
       >
-        <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg"
-          style={{ background: 'rgba(76,175,80,0.15)', border: '1px solid rgba(76,175,80,0.5)' }}>→</div>
-        <span className="text-xs text-green-400 font-black uppercase tracking-widest">{rightWord}</span>
+        <div className="w-12 h-12 flex items-center justify-center rounded-sm text-xl font-black"
+          style={{ background: 'var(--green)', color: '#ffffff' }}>✓</div>
+        <span className="text-xs font-black uppercase" style={{ color: 'var(--green-light)' }}>{rightWord}</span>
       </motion.div>
 
-      {/* Card */}
+      {/* ── Card ── */}
       <motion.div
-        className="w-full max-w-xs rounded-3xl px-5 py-5 touch-none cursor-grab active:cursor-grabbing p-nm-card p-nm-glow-wheat"
+        className="w-full max-w-xs rounded-lg touch-none cursor-grab active:cursor-grabbing f-card-wheat"
         drag="x"
         style={{ x, rotate, scale: cardScale }}
         dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.12}
+        dragElastic={0.10}
         onDragEnd={handleDragEnd}
         animate={controls}
         initial={{ opacity: 1, x: 0, rotate: 0 }}
-        whileTap={{ scale: 0.97 }}
+        whileTap={{ scale: 0.98 }}
       >
-        <div className="flex items-center justify-between mb-3">
-          <span className={`text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full p-phase-${card.seasonPhase}`}>
+        {/* Phase badge + swipe hint */}
+        <div className="flex items-center justify-between px-4 pt-4 pb-2">
+          <span className={`text-xs font-black uppercase tracking-widest px-2.5 py-1 rounded-sm phase-${card.seasonPhase}`}>
             {T(`phase_${card.seasonPhase}`)}
           </span>
-          <span className="swipe-hint text-xs flex items-center gap-1" style={{ color: 'var(--p-text-muted)' }}>
+          <span className="swipe-hint text-xs font-bold" style={{ color: 'var(--text-muted)' }}>
             ← swipe →
           </span>
         </div>
 
-        <h2 className="text-base font-black leading-snug" style={{ color: 'var(--p-text-primary)' }}>{title}</h2>
-        <p className="mt-2 text-xs leading-relaxed" style={{ color: 'var(--p-text-secondary)' }}>
-          {localizedPrompt || card.prompt}
-        </p>
-
-        <div className="my-3 h-px"
-          style={{ background: 'linear-gradient(90deg,transparent,rgba(212,168,67,0.2),transparent)' }} />
-
-        <div className="grid grid-cols-2 gap-2.5">
-          <motion.div className="rounded-2xl px-3 py-3"
-            style={{ opacity: leftChoiceOpacity, background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.25)' }}>
-            <div className="flex items-center gap-1 mb-2">
-              <span className="text-xs text-red-400">←</span>
-              <span className="text-xs uppercase tracking-widest text-red-400 font-black">{T('card_swipe_left')}</span>
-            </div>
-            <div className="text-xs font-bold leading-snug" style={{ color: 'var(--p-text-primary)' }}>{leftLabel}</div>
-            <div className="text-xs mt-1 leading-snug" style={{ color: 'var(--p-text-muted)' }}>{leftDesc}</div>
-          </motion.div>
-
-          <motion.div className="rounded-2xl px-3 py-3"
-            style={{ opacity: rightChoiceOpacity, background: 'rgba(76,175,80,0.07)', border: '1px solid rgba(76,175,80,0.25)' }}>
-            <div className="flex items-center gap-1 mb-2 justify-end">
-              <span className="text-xs uppercase tracking-widest text-green-400 font-black">{T('card_swipe_right')}</span>
-              <span className="text-xs text-green-400">→</span>
-            </div>
-            <div className="text-xs font-bold leading-snug" style={{ color: 'var(--p-text-primary)' }}>{rightLabel}</div>
-            <div className="text-xs mt-1 leading-snug" style={{ color: 'var(--p-text-muted)' }}>{rightDesc}</div>
-          </motion.div>
+        {/* Title */}
+        <div className="px-4 pb-1">
+          <h2 className="text-base font-black leading-snug" style={{ color: 'var(--text)' }}>{title}</h2>
         </div>
 
+        {/* Prompt */}
+        <div className="px-4 pb-3">
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-sub)' }}>
+            {localizedPrompt || card.prompt}
+          </p>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: '2px', background: 'var(--border)' }} />
+
+        {/* Choices — two flat blocks */}
+        <div className="grid grid-cols-2">
+          {/* Left choice */}
+          <div className="px-3 py-3"
+            style={{
+              borderRight: '1px solid var(--border)',
+              background: dragDir === 'left' ? 'rgba(224,48,48,0.12)' : 'transparent',
+              transition: 'background 0.15s',
+            }}>
+            <div className="flex items-center gap-1 mb-1.5">
+              <span className="text-xs font-black" style={{ color: 'var(--red)' }}>← {leftWord}</span>
+            </div>
+            <div className="text-xs font-black leading-snug" style={{ color: 'var(--text)' }}>{leftLabel}</div>
+            <div className="text-xs mt-1 leading-snug" style={{ color: 'var(--text-muted)' }}>{leftDesc}</div>
+          </div>
+
+          {/* Right choice */}
+          <div className="px-3 py-3"
+            style={{
+              background: dragDir === 'right' ? 'rgba(45,158,79,0.12)' : 'transparent',
+              transition: 'background 0.15s',
+            }}>
+            <div className="flex items-center gap-1 mb-1.5 justify-end">
+              <span className="text-xs font-black" style={{ color: 'var(--green-light)' }}>{rightWord} →</span>
+            </div>
+            <div className="text-xs font-black leading-snug text-right" style={{ color: 'var(--text)' }}>{rightLabel}</div>
+            <div className="text-xs mt-1 leading-snug text-right" style={{ color: 'var(--text-muted)' }}>{rightDesc}</div>
+          </div>
+        </div>
+
+        {/* Tags */}
         {card.tags?.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
+          <div className="flex flex-wrap gap-1.5 px-4 py-3" style={{ borderTop: '1px solid var(--border)' }}>
             {card.tags.map(tag => (
-              <span key={tag} className="text-xs px-2 py-0.5 rounded font-medium"
-                style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--p-text-muted)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <span key={tag} className="text-xs px-2 py-0.5 rounded-sm font-bold"
+                style={{ background: 'var(--bg-inset)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
                 #{tag}
               </span>
             ))}
